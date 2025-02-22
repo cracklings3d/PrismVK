@@ -1,32 +1,45 @@
-# Prerequisites
-*.d
+# Ignore all files by default, but not the directories
+*
+!*/
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+######## Unignore specific files ########
+# CMake
+!CMakeLists.txt
 
-# Precompiled Headers
-*.gch
-*.pch
+# Source files
+!*.h
+!*.cpp
+!*.hpp
+!*.c
+!*.cc
+!*.cxx
+!*.hxx
+!*.inl
+!*.ipp
+!*.tpp
+!*.tcc
+!*.txx
+!*.ixx
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+# Docs
+!*.md
 
-# Fortran module files
-*.mod
-*.smod
+# Automation scripts
+!*.sh
+!*.bat
+!*.cmd
+!*.ps1
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+ # Shader files
+!*.vert
+!*.frag
+!*.geom
+!*.tesc
+!*.tese
+!*.comp
+!*.spv
 
-# Executables
-*.exe
-*.out
-*.app
+######## Reignore the build directory ########
+*[Dd]ebug/
+*[Rr]elease/
+
