@@ -2,62 +2,65 @@
 
 #include "Instance.h"
 #include "../Instance.h"
+#include "../Physical_device.h"
+#include "Device.h"
+#include "Error.h"
+#include "Param_converters.h"
+#include "Physical_device.h"
 
-
-Prism::HAL::Vulkan::Instance::Instance(
-  const InstanceCreateInfo &&instance_create_info
-, const Window *             window
-)
+namespace Prism::HAL::Vulkan
 {
-  VkApplicationInfo vk_application_info;
-
-  vk_application_info.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  vk_application_info.pApplicationName   = instance_create_info.application_name.c_str();
-  vk_application_info.applicationVersion = instance_create_info.application_version;
-  vk_application_info.pEngineName        = instance_create_info.engine_name.c_str();
-  vk_application_info.engineVersion      = instance_create_info.engine_version;
-  vk_application_info.apiVersion         = VK_API_VERSION_1_4;
-
-  std::vector<const char *> Extensions;
+  Instance::Instance(const Instance_create_info &instance_create_info)
   {
-    Extensions = window->get_required_extensions();
+    VkInstanceCreateInfo vk_instance_create_info = convert(instance_create_info);
+
+    VkInstance vk_instance;
+    check_result(vkCreateInstance(&vk_instance_create_info, nullptr, &vk_instance), "Create_instance");
+
+    _vk_instance = std::make_unique<VkInstance>(vk_instance);
   }
 
-  VkInstanceCreateInfo vk_instance_create_info;
-
-  vk_instance_create_info.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-  vk_instance_create_info.pApplicationInfo        = &vk_application_info;
-  vk_instance_create_info.enabledExtensionCount   = Extensions.size();
-  vk_instance_create_info.ppEnabledExtensionNames = Extensions.data();
-
-  switch (vkCreateInstance(&vk_instance_create_info, nullptr, &_vk_instance))
+  Instance::~Instance()
   {
-  case VK_ERROR_OUT_OF_HOST_MEMORY:
-    throw std::runtime_error("Failed to create Vulkan instance: Out of host memory!");
-  case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-    throw std::runtime_error("Failed to create Vulkan instance: Out of device memory!");
-  case VK_ERROR_INITIALIZATION_FAILED:
-    throw std::runtime_error("Failed to create Vulkan instance: Initialization failed!");
-  case VK_ERROR_LAYER_NOT_PRESENT:
-    throw std::runtime_error("Failed to create Vulkan instance: Layer not present!");
-  case VK_ERROR_EXTENSION_NOT_PRESENT:
-    throw std::runtime_error("Failed to create Vulkan instance: Extension not present!");
-  case VK_ERROR_INCOMPATIBLE_DRIVER:
-    throw std::runtime_error("Failed to create Vulkan instance: Incompatible driver!");
-  case VK_SUCCESS:
-    return;
-  default:
-    throw std::runtime_error("Failed to create Vulkan instance: Unknown error!");
+    vkDestroyInstance(*_vk_instance, nullptr);
+    _vk_instance.reset();
   }
-}
 
-Prism::HAL::Vulkan::Instance::~Instance()
-{
-  vkDestroyInstance(_vk_instance, nullptr);
-}
+  VkInstance &Instance::get_vk_instance() const { return *_vk_instance; }
 
-Prism::HAL::Device Prism::HAL::Vulkan::Instance::create_device() {}
-VkInstance         Prism::HAL::Vulkan::Instance::get_vk_instance()
-{
-  return _vk_instance;
-}
+  std::shared_ptr<HAL::Physical_device> Instance::select_discrete_gpu() const
+  {
+    uint32_t device_count = 0;
+    vkEnumeratePhysicalDevices(*_vk_instance, &device_count, nullptr);
+    std::vector<VkPhysicalDevice> vk_physical_devices(device_count);
+    vkEnumeratePhysicalDevices(*_vk_instance, &device_count, vk_physical_devices.data());
+
+    for (const VkPhysicalDevice &vk_physical_device : vk_physical_devices)
+    {
+      VkPhysicalDeviceProperties vk_physical_device_properties;
+      vkGetPhysicalDeviceProperties(vk_physical_device, &vk_physical_device_properties);
+
+      if (vk_physical_device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+      {
+        return std::make_shared<Physical_device>(vk_physical_device);
+      }
+    }
+    return nullptr;
+  }
+
+  std::vector<std::shared_ptr<HAL::Physical_device>> Instance::enumerate_physical_devices() const
+  {
+    uint32_t device_count = 0;
+    vkEnumeratePhysicalDevices(*_vk_instance, &device_count, nullptr);
+    std::vector<VkPhysicalDevice> vk_physical_devices(device_count);
+    vkEnumeratePhysicalDevices(*_vk_instance, &device_count, vk_physical_devices.data());
+
+    std::vector<std::shared_ptr<HAL::Physical_device>> physical_devices;
+    for (const VkPhysicalDevice &vk_physical_device : vk_physical_devices)
+    {
+      physical_devices.push_back(std::make_shared<Physical_device>(vk_physical_device));
+    }
+
+    return physical_devices;
+  }
+} // namespace Prism::HAL::Vulkan

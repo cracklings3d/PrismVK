@@ -3,10 +3,12 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <vulkan/vulkan_core.h>
 
-#include <vulkan/vulkan.h>
-
-#include "../HAL/HAL.h"
+#include "../HAL/Window.h"
+#include "../HAL/Instance.h"
+#include "../HAL/Surface.h"
+#include <functional>
 
 
 namespace Prism
@@ -61,18 +63,22 @@ namespace Prism
 
     std::unique_ptr<HAL::Window>   _window   = nullptr;
     std::unique_ptr<HAL::Instance> _instance = nullptr;
+    std::unique_ptr<HAL::Surface>  _surface  = nullptr;
+    std::unique_ptr<HAL::Device, std::function<void(HAL::Device *)>>   _device   = nullptr;
+
+    std::shared_ptr<HAL::Physical_device> _physical_device;
 
   private:
     VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 
     // vulkan objects and stuff
-    VkSurfaceKHR   surface    = nullptr;
+    // VkSurfaceKHR   surface    = nullptr;
     VkSwapchainKHR swap_chain = nullptr;
 
     uint32_t swap_chain_size = 0;
 
     // per instance variable
-    VkInstance       instance                  = nullptr;
+    // VkInstance       instance                  = nullptr;
     VkPhysicalDevice physical_device           = nullptr;
     VkDevice         device                    = nullptr;
     VkQueue          graphic_queue             = nullptr;

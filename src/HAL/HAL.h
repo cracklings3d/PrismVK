@@ -29,9 +29,4 @@ namespace Prism::HAL
     Global_config &operator=(const Global_config &) = delete;
     Global_config &operator=(Global_config &&)      = delete;
   };
-
-  class Instance;
-  class Window;
-  class Surface;
-  class Device;
 }

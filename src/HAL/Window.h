@@ -11,6 +11,7 @@
 namespace Prism::HAL
 {
   class Surface;
+  class Instance;
 
   class Window
   {

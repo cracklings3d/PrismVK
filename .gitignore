@@ -42,4 +42,4 @@
 ######## Reignore the build directory ########
 *[Dd]ebug/
 *[Rr]elease/
-
+build/

@@ -3,17 +3,16 @@
 #include "Instance.h"
 #include "Vulkan/Instance.h"
 
-
-std::unique_ptr<Prism::HAL::Instance> Prism::HAL::Instance_factory::create_instance(
-  const InstanceCreateInfo &create_info
-, const Window *            window
-)
+namespace Prism::HAL
 {
-  switch (Global_config::get().get_render_api())
+  std::unique_ptr<Instance> create_instance(const Instance_create_info &create_info)
   {
-  case Render_api::Vulkan:
-    return std::make_unique<Vulkan::Instance>(std::move(create_info), window);
-  default:
-    throw std::runtime_error("Unsupported render API!");
+    switch (Global_config::get().get_render_api())
+    {
+    case Render_api::Vulkan:
+      return std::make_unique<Vulkan::Instance>(create_info);
+    default:
+      throw std::runtime_error("Unsupported render API!");
+    }
   }
-}
+} // Prism::HAL

@@ -15,7 +15,17 @@ add_library(PrismVk SHARED
     HAL/Instance.cpp
     HAL/Instance.h
     HAL/Vulkan/Surface.cpp
-    HAL/Vulkan/Surface.h)
+    HAL/Vulkan/Surface.h
+    HAL/Vulkan/Physical_device.cpp
+    HAL/Vulkan/Physical_device.h
+    HAL/Physical_device.h
+    HAL/Surface.cpp
+    HAL/Surface.h
+    HAL/Device.cpp
+    HAL/Device.h
+    HAL/Vulkan/Device.cpp
+    HAL/Vulkan/Device.h
+)
 
 
 #include directories

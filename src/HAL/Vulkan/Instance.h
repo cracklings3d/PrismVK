@@ -2,33 +2,31 @@
 
 #pragma once
 
+#include "../Device.h"
+#include "../Instance.h"
 #include <memory>
 #include <vulkan/vulkan_core.h>
-#include "../HAL.h"
-#include "../Window.h"
-#include "../Instance.h"
-
-
-namespace Prism::HAL
-{
-  struct InstanceCreateInfo;
-}
 
 namespace Prism::HAL::Vulkan
 {
+  class Device;
+
   class Instance final : public HAL::Instance
   {
   public:
-    Instance(const InstanceCreateInfo &&instance_create_info, const Window *window);
+    explicit Instance(const HAL::Instance_create_info &instance_create_info);
     ~Instance() override;
 
-    [[nodiscard]] Device create_device() override;
+    [[nodiscard]] std::vector<std::shared_ptr<HAL::Physical_device>> enumerate_physical_devices() const override;
 
-    VkInstance get_vk_instance();
+    [[nodiscard]] std::shared_ptr<HAL::Physical_device> select_discrete_gpu() const override;
+
+    [[nodiscard]] VkInstance &get_vk_instance() const;
 
   private:
-    VkInstance _vk_instance = nullptr;
+    std::unique_ptr<VkInstance> _vk_instance;
   };
-}
+
+} // namespace Prism::HAL::Vulkan
 
 #pragma once

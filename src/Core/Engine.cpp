@@ -1,80 +1,83 @@
 #include "Engine.h"
 
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_vulkan.h>
 #include <array>
-#include <vector>
-#include <stdexcept>
 #include <cassert>
 #include <fstream>
-#include <SDL_vulkan.h>
+#include <stdexcept>
+#include <vector>
 
+#include "../HAL/Device.h"
+#include "../HAL/Instance.h"
+#include "../HAL/Physical_device.h"
 #include "../HAL/Window.h"
-#include "../HAL//Instance.h"
 
 #include "../Resource/TriangleMesh.h"
-
 
 namespace Prism
 {
   void Engine::create_instance()
   {
-    HAL::InstanceCreateInfo instance_create_info;
-    instance_create_info.application_name = "Prism Application";
-    instance_create_info.engine_name      = "Prism Engine";
+    HAL::Instance_create_info instance_create_info;
+    instance_create_info.application_name    = "Prism Application";
+    instance_create_info.engine_name         = "Prism Engine";
     instance_create_info.application_version = PRISM_VERSION(0, 0, 1);
     instance_create_info.engine_version      = PRISM_VERSION(0, 0, 1);
 
-    _instance = HAL::Instance_factory::create_instance(instance_create_info, _window.get());
+    _instance = HAL::create_instance(instance_create_info);
   }
 
-  void Engine::create_surface()
-  {
-    assert(_window->create_surface(instance) == SDL_TRUE);
-  }
+  void Engine::create_surface() { _surface = _window->create_surface(*_instance); }
 
   void Engine::select_physical_device()
   {
-    uint32_t device_count = 0;
-    vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
-    assert(device_count > 0);
-    std::vector<VkPhysicalDevice> devices(device_count);
-    vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
-    // physical_device = devices[0];
+    auto physical_devices = _instance->enumerate_physical_devices();
 
-    for (const auto &device : devices)
+    for (auto &physical_device : physical_devices)
     {
-      VkPhysicalDeviceProperties device_properties;
-      vkGetPhysicalDeviceProperties(device, &device_properties);
-      if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+      auto physical_device_properties = physical_device->get_device_properties();
+      if (physical_device_properties.device_type == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
       {
-        physical_device = device;
+        this->_physical_device = physical_device;
         break;
       }
     }
-    assert(physical_device && "failed to find a suitable GPU!");
+    assert(this->_physical_device && "failed to find a suitable GPU!");
   }
 
   void Engine::create_device_and_queue()
   {
-    constexpr auto device_extensions = std::array{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    HAL::Device_queue_create_info device_queue_create_info;
+    device_queue_create_info.queue_family_index = 0;
+    device_queue_create_info.queue_priorities   = std::make_shared<std::vector<float>>(1.0f);
 
-    VkDeviceQueueCreateInfo graphics_queue_create_info = {};
-    graphics_queue_create_info.sType                   = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    graphics_queue_create_info.queueFamilyIndex        = 0;
-    graphics_queue_create_info.queueCount              = 1;
-    graphics_queue_create_info.pQueuePriorities        = &graphic_queue_priority;
+    HAL::Device_create_info device_create_info;
+    device_create_info.queue_infos = {device_queue_create_info};
 
-    VkDeviceCreateInfo device_create_info      = {};
-    device_create_info.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    device_create_info.queueCreateInfoCount    = 1;
-    device_create_info.pQueueCreateInfos       = &graphics_queue_create_info;
-    device_create_info.enabledExtensionCount   = device_extensions.size();
-    device_create_info.ppEnabledExtensionNames = device_extensions.data();
+    _device = _physical_device->create_device(device_create_info);
+    assert(_device);
 
-    assert(
-      vkCreateDevice(physical_device, &device_create_info, nullptr, &device) == VK_SUCCESS &&
-      "failed to create logical device!"
-    );
-    vkGetDeviceQueue(device, 0, 0, &graphic_queue);
+    // constexpr auto device_extensions = std::array{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+    // VkDeviceQueueCreateInfo graphics_queue_create_info = {};
+    // graphics_queue_create_info.sType                   = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    // graphics_queue_create_info.queueFamilyIndex        = 0;
+    // graphics_queue_create_info.queueCount              = 1;
+    // graphics_queue_create_info.pQueuePriorities        = &graphic_queue_priority;
+    //
+    // VkDeviceCreateInfo device_create_info      = {};
+    // device_create_info.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    // device_create_info.queueCreateInfoCount    = 1;
+    // device_create_info.pQueueCreateInfos       = &graphics_queue_create_info;
+    // device_create_info.enabledExtensionCount   = device_extensions.size();
+    // device_create_info.ppEnabledExtensionNames = device_extensions.data();
+    //
+    // assert(
+    //   vkCreateDevice(physical_device, &device_create_info, nullptr, &device) == VK_SUCCESS &&
+    //   "failed to create logical device!"
+    // );
+    // vkGetDeviceQueue(device, 0, 0, &graphic_queue);
   }
 
   void Engine::create_swapchain()
@@ -97,9 +100,8 @@ namespace Prism
     swap_chain_create_info.clipped                  = VK_TRUE;
 
     assert(
-      vkCreateSwapchainKHR(device, &swap_chain_create_info, nullptr, &swap_chain) == VK_SUCCESS &&
-      "failed to create swap chain!"
-    );
+        vkCreateSwapchainKHR(device, &swap_chain_create_info, nullptr, &swap_chain) == VK_SUCCESS
+        && "failed to create swap chain!");
   }
 
   void Engine::create_swapchain_image_views()
@@ -126,12 +128,8 @@ namespace Prism
       swap_chain_image_view_create_info.subresourceRange.baseArrayLayer = 0;
       swap_chain_image_view_create_info.subresourceRange.layerCount     = 1;
 
-      if (vkCreateImageView(
-            device
-          , &swap_chain_image_view_create_info
-          , nullptr
-          , &swap_chain_image_views[i]
-          ) != VK_SUCCESS)
+      if (vkCreateImageView(device, &swap_chain_image_view_create_info, nullptr, &swap_chain_image_views[i])
+          != VK_SUCCESS)
       {
         throw std::runtime_error("failed to create image views!");
       }
@@ -167,9 +165,8 @@ namespace Prism
     render_pass_info.pSubpasses             = &subpass;
 
     assert(
-      vkCreateRenderPass(device, &render_pass_info, nullptr, &render_pass) == VK_SUCCESS &&
-      "failed to create render pass!"
-    );
+        vkCreateRenderPass(device, &render_pass_info, nullptr, &render_pass) == VK_SUCCESS
+        && "failed to create render pass!");
   }
 
   void Engine::create_shader_modules()
@@ -252,8 +249,8 @@ namespace Prism
     multisampling.rasterizationSamples                 = VK_SAMPLE_COUNT_1_BIT;
 
     VkPipelineColorBlendAttachmentState color_blend_attachment = {};
-    color_blend_attachment.colorWriteMask                      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                                            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    color_blend_attachment.colorWriteMask
+        = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     color_blend_attachment.blendEnable = VK_FALSE;
 
     VkPipelineColorBlendStateCreateInfo color_blending = {};
@@ -268,9 +265,8 @@ namespace Prism
     // pipeline_layout_info.pSetLayouts                = descriptor_sets.data();
 
     assert(
-      vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &pipeline_layout) == VK_SUCCESS &&
-      "failed to create pipeline layout!"
-    );
+        vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &pipeline_layout) == VK_SUCCESS
+        && "failed to create pipeline layout!");
 
     VkGraphicsPipelineCreateInfo pipeline_info = {};
     pipeline_info.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -287,9 +283,8 @@ namespace Prism
     pipeline_info.subpass                      = 0;
 
     assert(
-      vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline) == VK_SUCCESS
-      && "failed to create graphics pipeline!"
-    );
+        vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline) == VK_SUCCESS
+        && "failed to create graphics pipeline!");
   }
 
   void Engine::create_frame_buffers()
@@ -307,9 +302,8 @@ namespace Prism
       framebuffer_info.layers                  = 1;
 
       assert(
-        vkCreateFramebuffer(device, &framebuffer_info, nullptr, &swap_chain_frame_buffers[i]) == VK_SUCCESS &&
-        "failed to create framebuffer!"
-      );
+          vkCreateFramebuffer(device, &framebuffer_info, nullptr, &swap_chain_frame_buffers[i]) == VK_SUCCESS
+          && "failed to create framebuffer!");
     }
   }
 
@@ -324,16 +318,14 @@ namespace Prism
     vertex_buffer_info.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
 
     assert(
-      vkCreateBuffer(device, &vertex_buffer_info, nullptr, &mesh_vertex_buffer) == VK_SUCCESS &&
-      "failed to create vertex buffer!"
-    );
+        vkCreateBuffer(device, &vertex_buffer_info, nullptr, &mesh_vertex_buffer) == VK_SUCCESS
+        && "failed to create vertex buffer!");
 
     VkMemoryRequirements vertex_buffer_memory_requirements;
     vkGetBufferMemoryRequirements(device, mesh_vertex_buffer, &vertex_buffer_memory_requirements);
 
     VkMemoryPropertyFlags desired_memory_property_flags
-        = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     VkMemoryAllocateInfo vertex_buffer_memory_info = {};
 
@@ -342,11 +334,9 @@ namespace Prism
     vertex_buffer_memory_info.memoryTypeIndex
         = find_memory_type(vertex_buffer_memory_requirements.memoryTypeBits, desired_memory_property_flags);
 
-
     assert(
-      vkAllocateMemory(device, &vertex_buffer_memory_info, nullptr, &mesh_vertex_buffer_memory) == VK_SUCCESS &&
-      "failed to allocate vertex buffer memory!"
-    );
+        vkAllocateMemory(device, &vertex_buffer_memory_info, nullptr, &mesh_vertex_buffer_memory) == VK_SUCCESS
+        && "failed to allocate vertex buffer memory!");
 
     vkBindBufferMemory(device, mesh_vertex_buffer, mesh_vertex_buffer_memory, 0);
 
@@ -437,13 +427,8 @@ namespace Prism
     vkResetFences(device, 1, get_current_command_buffer_fence());
 
     vkAcquireNextImageKHR(
-      device
-    , swap_chain
-    , UINT64_MAX
-    , *(image_available_semaphores.data() + semaphore_index)
-    , VK_NULL_HANDLE
-    , &swap_chain_index
-    );
+        device, swap_chain, UINT64_MAX, *(image_available_semaphores.data() + semaphore_index), VK_NULL_HANDLE,
+        &swap_chain_index);
   }
 
   void Engine::initialize()
@@ -520,8 +505,8 @@ namespace Prism
     for (uint32_t i = 0; i < physical_device_constraint.memoryTypeCount; ++i)
     {
       if ((type_filter & (1 << i)) && // Is memory type compatible with buffer?
-          (physical_device_constraint.memoryTypes[i].propertyFlags & properties) ==
-          properties) // Does memory type have required properties?
+          (physical_device_constraint.memoryTypes[i].propertyFlags & properties)
+              == properties) // Does memory type have required properties?
       {
         return i;
       }
@@ -529,7 +514,6 @@ namespace Prism
 
     throw std::runtime_error("Failed to find suitable memory type!");
   }
-
 
   void Engine::create_semaphores()
   {
@@ -542,13 +526,11 @@ namespace Prism
       semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
       assert(
-        vkCreateSemaphore(device, &semaphore_info, nullptr, &image_available_semaphores[i]) == VK_SUCCESS &&
-        "failed to create semaphores!"
-      );
+          vkCreateSemaphore(device, &semaphore_info, nullptr, &image_available_semaphores[i]) == VK_SUCCESS
+          && "failed to create semaphores!");
       assert(
-        vkCreateSemaphore(device, &semaphore_info, nullptr, &render_finished_semaphores[i]) == VK_SUCCESS &&
-        "failed to create semaphores!"
-      );
+          vkCreateSemaphore(device, &semaphore_info, nullptr, &render_finished_semaphores[i]) == VK_SUCCESS
+          && "failed to create semaphores!");
     }
   }
 
@@ -607,10 +589,7 @@ namespace Prism
     return swap_chain_frame_buffers[frame_index % swap_chain_size];
   }
 
-  VkCommandBuffer Engine::get_current_command_buffer() const
-  {
-    return command_buffers[frame_index % swap_chain_size];
-  }
+  VkCommandBuffer Engine::get_current_command_buffer() const { return command_buffers[frame_index % swap_chain_size]; }
 
   const VkFence *Engine::get_previous_command_buffer_fence() const
   {
@@ -639,9 +618,8 @@ namespace Prism
     command_buffer_info.flags                    = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
     assert(
-      vkBeginCommandBuffer(command_buffer, &command_buffer_info) == VK_SUCCESS &&
-      "failed to begin recording command buffer!"
-    );
+        vkBeginCommandBuffer(command_buffer, &command_buffer_info) == VK_SUCCESS
+        && "failed to begin recording command buffer!");
 
     VkRenderPassBeginInfo render_pass_begin_info = {};
     render_pass_begin_info.sType                 = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -654,7 +632,6 @@ namespace Prism
 
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-
     std::vector<VkDeviceSize> offsets = {0};
 
     // Bind pipeline and draw triangle here (pipeline creation omitted for brevity)
@@ -666,4 +643,4 @@ namespace Prism
 
     assert(vkEndCommandBuffer(command_buffer) == VK_SUCCESS && "failed to record command buffer!");
   }
-} // Prism
+} // namespace Prism
