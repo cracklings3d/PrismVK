@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.30)
-project(PrismVk)
+project(Prism)
 
 set(CMAKE_CXX_STANDARD 23)
 
@@ -15,8 +15,7 @@ find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
 
 
-add_executable(PrismVkApp app.cpp
-    src/Core/Engine.cpp
-    src/Core/Engine.h)
+add_executable(PrismApp app.cpp)
 
-target_link_libraries(PrismVkApp ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES})
+target_link_libraries(PrismApp ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES})
+target_link_libraries(PrismApp Prism::Prism)

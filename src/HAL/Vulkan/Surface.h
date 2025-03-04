@@ -14,7 +14,7 @@ namespace Prism::HAL::Vulkan
     Surface(VkSurfaceKHR &&vk_surface, VkInstance *vk_instance);
     ~Surface() override;
 
-    [[nodiscard]] VkSurfaceKHR &get_vk_surface() const;
+    [[nodiscard]] VkSurfaceKHR *get_vk_surface() const;
 
   private:
     std::unique_ptr<VkSurfaceKHR> _vk_surface = nullptr;

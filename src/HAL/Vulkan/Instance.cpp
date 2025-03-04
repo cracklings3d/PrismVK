@@ -26,7 +26,7 @@ namespace Prism::HAL::Vulkan
     _vk_instance.reset();
   }
 
-  VkInstance &Instance::get_vk_instance() const { return *_vk_instance; }
+  VkInstance *Instance::get_vk_instance() const { return _vk_instance.get(); }
 
   std::shared_ptr<HAL::Physical_device> Instance::select_discrete_gpu() const
   {

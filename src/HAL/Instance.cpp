@@ -2,6 +2,7 @@
 
 #include "Instance.h"
 #include "Vulkan/Instance.h"
+#include "HAL.h"
 
 namespace Prism::HAL
 {

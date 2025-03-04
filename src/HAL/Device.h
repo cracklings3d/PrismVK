@@ -6,17 +6,22 @@
 #include <vector>
 
 #include "HAL.h"
-#include "Physical_device.h" // Need to know about Physical_device
 #include "Utils.h"
 
 namespace Prism::HAL
 {
+  class Queue;
+  class Swapchain;
+  class Swapchain_create_info;
+
   class Device
   {
   public:
     virtual ~Device() = default;
 
-    // virtual class Command_queue* get_graphics_queue() = 0;
+    [[nodiscard]] virtual std::unique_ptr<Queue>     get_graphics_queue() const = 0;
+    [[nodiscard]] virtual std::unique_ptr<Swapchain> create_swapchain(const Swapchain_create_info &create_info) const
+        = 0;
   };
 
   /**
@@ -24,7 +29,7 @@ namespace Prism::HAL
    */
   struct Device_queue_create_info
   {
-    uint32_t queue_family_index;
+    uint32_t                            queue_family_index;
     std::shared_ptr<std::vector<float>> queue_priorities;
   };
 

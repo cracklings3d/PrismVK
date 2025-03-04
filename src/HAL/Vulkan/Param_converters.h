@@ -1,19 +1,38 @@
 #pragma once
 
-#include "../Physical_device.h"
 #include <vulkan/vulkan_core.h>
+
+#include "../Physical_device.h"
 
 namespace Prism::HAL
 {
+  struct Extent;
+
   struct Instance_create_info;
   struct Device_create_info;
+  struct Swapchain_create_info;
+  struct Image_view_create_info;
+
+  enum class Image_format;
+  enum class Color_space;
+  enum class Image_usage;
+  enum class Image_sharing_mode;
+  enum class Image_present_mode;
 } // namespace Prism::HAL
 
 namespace Prism::HAL::Vulkan
 {
   /************************* HAL to Vulkan *************************/
-  VkInstanceCreateInfo convert(const HAL::Instance_create_info &instance_create_info);
-  VkDeviceCreateInfo   convert(const HAL::Device_create_info &device_create_info);
+  VkInstanceCreateInfo     convert(const HAL::Instance_create_info &instance_create_info);
+  VkDeviceCreateInfo       convert(const HAL::Device_create_info &device_create_info);
+  VkSwapchainCreateInfoKHR convert(const HAL::Swapchain_create_info &swapchain_create_info);
+  VkFormat                 convert(const HAL::Image_format &image_format);
+  VkColorSpaceKHR          convert(const HAL::Color_space &image_color_space);
+  VkExtent2D               convert(const HAL::Extent &image_extent);
+  VkImageUsageFlags        convert(const HAL::Image_usage &image_usage);
+  VkSharingMode            convert(const HAL::Image_sharing_mode &image_sharing_mode);
+  VkPresentModeKHR         convert(const HAL::Image_present_mode &image_present_mode);
+  VkImageViewCreateInfo    convert(const HAL::Image_view_create_info &image_view_create_info);
 
   /************************* Vulkan to HAL *************************/
   Physical_device_properties convert(const VkPhysicalDeviceProperties &vk_physical_device_properties);

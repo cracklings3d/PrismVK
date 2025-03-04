@@ -9,8 +9,10 @@
 #include <vector>
 
 #include "../HAL/Device.h"
+#include "../HAL/Image_view.h"
 #include "../HAL/Instance.h"
 #include "../HAL/Physical_device.h"
+#include "../HAL/Swapchain.h"
 #include "../HAL/Window.h"
 
 #include "../Resource/TriangleMesh.h"
@@ -20,12 +22,13 @@ namespace Prism
   void Engine::create_instance()
   {
     HAL::Instance_create_info instance_create_info;
+
     instance_create_info.application_name    = "Prism Application";
     instance_create_info.engine_name         = "Prism Engine";
     instance_create_info.application_version = PRISM_VERSION(0, 0, 1);
     instance_create_info.engine_version      = PRISM_VERSION(0, 0, 1);
 
-    _instance = HAL::create_instance(instance_create_info);
+    _instance = HAL::create_instance(std::move(instance_create_info));
   }
 
   void Engine::create_surface() { _surface = _window->create_surface(*_instance); }
@@ -56,84 +59,35 @@ namespace Prism
     device_create_info.queue_infos = {device_queue_create_info};
 
     _device = _physical_device->create_device(device_create_info);
+    _queue  = _device->get_graphics_queue();
     assert(_device);
-
-    // constexpr auto device_extensions = std::array{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-
-    // VkDeviceQueueCreateInfo graphics_queue_create_info = {};
-    // graphics_queue_create_info.sType                   = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    // graphics_queue_create_info.queueFamilyIndex        = 0;
-    // graphics_queue_create_info.queueCount              = 1;
-    // graphics_queue_create_info.pQueuePriorities        = &graphic_queue_priority;
-    //
-    // VkDeviceCreateInfo device_create_info      = {};
-    // device_create_info.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    // device_create_info.queueCreateInfoCount    = 1;
-    // device_create_info.pQueueCreateInfos       = &graphics_queue_create_info;
-    // device_create_info.enabledExtensionCount   = device_extensions.size();
-    // device_create_info.ppEnabledExtensionNames = device_extensions.data();
-    //
-    // assert(
-    //   vkCreateDevice(physical_device, &device_create_info, nullptr, &device) == VK_SUCCESS &&
-    //   "failed to create logical device!"
-    // );
-    // vkGetDeviceQueue(device, 0, 0, &graphic_queue);
   }
 
   void Engine::create_swapchain()
   {
-    // TODO: Check min image count in compliance with the spec:
-    // https://www.khronos.org/registry/vulkan/specs/1.3-extensions/html/vkspec.html#VUID-VkSwapchainCreateInfoKHR-presentMode-02839
-    VkSwapchainCreateInfoKHR swap_chain_create_info = {};
-    swap_chain_create_info.sType                    = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    swap_chain_create_info.surface                  = surface;
-    swap_chain_create_info.minImageCount            = 3;
-    swap_chain_create_info.imageFormat              = VK_FORMAT_B8G8R8A8_SRGB;
-    swap_chain_create_info.imageColorSpace          = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-    swap_chain_create_info.imageExtent              = {800, 600};
-    swap_chain_create_info.imageArrayLayers         = 1;
-    swap_chain_create_info.imageUsage               = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    swap_chain_create_info.imageSharingMode         = VK_SHARING_MODE_EXCLUSIVE;
-    swap_chain_create_info.preTransform             = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-    swap_chain_create_info.compositeAlpha           = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    swap_chain_create_info.presentMode              = VK_PRESENT_MODE_FIFO_KHR;
-    swap_chain_create_info.clipped                  = VK_TRUE;
+    HAL::Swapchain_create_info swapchain_create_info = HAL::Swapchain_create_info_builder(*_surface)
+                                                           .image_format(HAL::Image_format::B8G8R8A8_SRGB)
+                                                           .image_color_space(HAL::Color_space::SRGB_NONLINEAR)
+                                                           .image_extent({800, 600})
+                                                           .image_array_layers(1)
+                                                           .image_usage(HAL::Image_usage::COLOR_ATTACHMENT)
+                                                           .image_sharing_mode(HAL::Image_sharing_mode::EXCLUSIVE)
+                                                           .image_present_mode(HAL::Image_present_mode::FIFO)
+                                                           .build();
 
-    assert(
-        vkCreateSwapchainKHR(device, &swap_chain_create_info, nullptr, &swap_chain) == VK_SUCCESS
-        && "failed to create swap chain!");
+    _swapchain = _device->create_swapchain(swapchain_create_info);
   }
 
   void Engine::create_swapchain_image_views()
   {
-    vkGetSwapchainImagesKHR(device, swap_chain, &swap_chain_size, nullptr);
-    swap_chain_images.resize(swap_chain_size);
-    vkGetSwapchainImagesKHR(device, swap_chain, &swap_chain_size, swap_chain_images.data());
+    _swapchain_images = _swapchain->get_images();
 
-    swap_chain_image_views.resize(swap_chain_size);
-    for (size_t i = 0; i < swap_chain_size; i++)
-    {
-      VkImageViewCreateInfo swap_chain_image_view_create_info           = {};
-      swap_chain_image_view_create_info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-      swap_chain_image_view_create_info.image                           = swap_chain_images[i];
-      swap_chain_image_view_create_info.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-      swap_chain_image_view_create_info.format                          = VK_FORMAT_B8G8R8A8_SRGB;
-      swap_chain_image_view_create_info.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-      swap_chain_image_view_create_info.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-      swap_chain_image_view_create_info.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-      swap_chain_image_view_create_info.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-      swap_chain_image_view_create_info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-      swap_chain_image_view_create_info.subresourceRange.baseMipLevel   = 0;
-      swap_chain_image_view_create_info.subresourceRange.levelCount     = 1;
-      swap_chain_image_view_create_info.subresourceRange.baseArrayLayer = 0;
-      swap_chain_image_view_create_info.subresourceRange.layerCount     = 1;
+    HAL::Image_view_create_info image_view_create_info = HAL::Image_view_create_info_builder()
+                                                             .image(_swapchain_images[0])
+                                                             .image_format(HAL::Image_format::B8G8R8A8_SRGB)
+                                                             .build();
 
-      if (vkCreateImageView(device, &swap_chain_image_view_create_info, nullptr, &swap_chain_image_views[i])
-          != VK_SUCCESS)
-      {
-        throw std::runtime_error("failed to create image views!");
-      }
-    }
+    _swapchain_image_views = _swapchain->create_image_views(image_view_create_info, _swapchain_images);
   }
 
   void Engine::create_render_pass()
@@ -433,7 +387,7 @@ namespace Prism
 
   void Engine::initialize()
   {
-    _window = HAL::Window_factory::create_window(_render_api);
+    _window = HAL::create_window(_render_api);
     create_instance();
     create_surface();
     select_physical_device();

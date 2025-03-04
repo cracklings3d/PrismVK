@@ -32,4 +32,6 @@ namespace Prism::HAL::Vulkan
 
     return std::move(std::make_unique<Device>(vk_device));
   }
+
+  VkPhysicalDevice *Physical_device::get_vk_physical_device() const { return _vk_physical_device.get(); }
 } // namespace Prism::HAL::Vulkan

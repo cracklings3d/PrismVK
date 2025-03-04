@@ -21,7 +21,7 @@ namespace Prism::HAL::Vulkan
 
     [[nodiscard]] std::shared_ptr<HAL::Physical_device> select_discrete_gpu() const override;
 
-    [[nodiscard]] VkInstance &get_vk_instance() const;
+    [[nodiscard]] VkInstance *get_vk_instance() const;
 
   private:
     std::unique_ptr<VkInstance> _vk_instance;

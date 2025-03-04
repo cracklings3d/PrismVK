@@ -86,6 +86,6 @@ std::unique_ptr<Prism::HAL::Surface> Prism::HAL::Vulkan::Window_Sdl2::create_sur
 {
   VkSurfaceKHR      surface;
   Vulkan::Instance &vulkan_instance = static_cast<Vulkan::Instance &>(instance);
-  assert(SDL_Vulkan_CreateSurface(_window, vulkan_instance.get_vk_instance(), &surface) == SDL_TRUE);
-  return std::make_unique<Vulkan::Surface>(std::move(surface), &vulkan_instance.get_vk_instance());
+  assert(SDL_Vulkan_CreateSurface(_window, *vulkan_instance.get_vk_instance(), &surface) == SDL_TRUE);
+  return std::make_unique<Vulkan::Surface>(std::move(surface), vulkan_instance.get_vk_instance());
 }

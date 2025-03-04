@@ -1,35 +1,27 @@
+function(CLASS_FILE DIRECTORY OUTPUT_VARIABLE)
+  file(GLOB class_files_list
+    "${CMAKE_CURRENT_SOURCE_DIR}/${DIRECTORY}/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/${DIRECTORY}/*.cpp"
+  )
+  set(${OUTPUT_VARIABLE} ${class_files_list} PARENT_SCOPE)
+endfunction()
 
-# add compile unit
-add_library(PrismVk SHARED
-    Core/Engine.cpp
-    Core/Engine.h
-    Resource/TriangleMesh.h
-    HAL/Vulkan/Instance.h
-    HAL/Vulkan/Instance.cpp
-    HAL/HAL.h
-    HAL/Vulkan/Window_Sdl2.cpp
-    HAL/Vulkan/Window_Sdl2.h
-    HAL/HAL.cpp
-    HAL/Window.cpp
-    HAL/Window.h
-    HAL/Instance.cpp
-    HAL/Instance.h
-    HAL/Vulkan/Surface.cpp
-    HAL/Vulkan/Surface.h
-    HAL/Vulkan/Physical_device.cpp
-    HAL/Vulkan/Physical_device.h
-    HAL/Physical_device.h
-    HAL/Surface.cpp
-    HAL/Surface.h
-    HAL/Device.cpp
-    HAL/Device.h
-    HAL/Vulkan/Device.cpp
-    HAL/Vulkan/Device.h
+add_library(Prism SHARED)
+
+CLASS_FILE(Core CORE)
+CLASS_FILE(HAL HAL)
+CLASS_FILE(HAL/Vulkan HAL_VULKAN)
+
+target_sources(Prism PUBLIC
+  ${HAL}
+  ${HAL_VULKAN}
+  ${CORE}
 )
 
+add_library(Prism::Prism ALIAS Prism)
 
 #include directories
-target_include_directories(PrismVk PUBLIC ${Vulkan_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
+target_include_directories(Prism PUBLIC ${Vulkan_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
 
 # link libraries
-target_link_libraries(PrismVk ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES})
+target_link_libraries(Prism ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES})

@@ -23,5 +23,5 @@ namespace Prism::HAL::Vulkan
     }
   }
 
-  VkSurfaceKHR &Surface::get_vk_surface() const { return *_vk_surface; }
+  VkSurfaceKHR *Surface::get_vk_surface() const { return _vk_surface.get(); }
 } // namespace Prism::HAL::Vulkan

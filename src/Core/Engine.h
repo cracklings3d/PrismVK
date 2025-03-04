@@ -1,15 +1,19 @@
 #pragma once
 
+#include <functional>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 #include <vulkan/vulkan_core.h>
 
-#include "../HAL/Window.h"
+#include "../HAL/Device.h"
+#include "../HAL/Image.h"
+#include "../HAL/Image_view.h"
 #include "../HAL/Instance.h"
+#include "../HAL/Queue.h"
 #include "../HAL/Surface.h"
-#include <functional>
-
+#include "../HAL/Swapchain.h"
+#include "../HAL/Window.h"
 
 namespace Prism
 {
@@ -52,8 +56,8 @@ namespace Prism
 
     [[nodiscard]] VkFramebuffer   get_current_frame_buffer() const;
     [[nodiscard]] VkCommandBuffer get_current_command_buffer() const;
-    [[nodiscard]] const VkFence * get_previous_command_buffer_fence() const;
-    [[nodiscard]] const VkFence * get_current_command_buffer_fence() const;
+    [[nodiscard]] const VkFence  *get_previous_command_buffer_fence() const;
+    [[nodiscard]] const VkFence  *get_current_command_buffer_fence() const;
 
     [[nodiscard]] const VkSemaphore *get_image_available_semaphore() const;
     [[nodiscard]] const VkSemaphore *get_render_finished_semaphore() const;
@@ -61,31 +65,30 @@ namespace Prism
   private:
     HAL::Render_api _render_api = HAL::Render_api::Unknown;
 
+
     std::unique_ptr<HAL::Window>   _window   = nullptr;
     std::unique_ptr<HAL::Instance> _instance = nullptr;
     std::unique_ptr<HAL::Surface>  _surface  = nullptr;
-    std::unique_ptr<HAL::Device, std::function<void(HAL::Device *)>>   _device   = nullptr;
 
     std::shared_ptr<HAL::Physical_device> _physical_device;
+
+    std::unique_ptr<HAL::Device>    _device    = nullptr;
+    std::unique_ptr<HAL::Queue>     _queue     = nullptr;
+    std::unique_ptr<HAL::Swapchain> _swapchain = nullptr;
+
+    std::vector<HAL::Image>      _swapchain_images      = {};
+    std::vector<HAL::Image_view> _swapchain_image_views = {};
 
   private:
     VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 
-    // vulkan objects and stuff
-    // VkSurfaceKHR   surface    = nullptr;
-    VkSwapchainKHR swap_chain = nullptr;
-
     uint32_t swap_chain_size = 0;
 
     // per instance variable
-    // VkInstance       instance                  = nullptr;
-    VkPhysicalDevice physical_device           = nullptr;
-    VkDevice         device                    = nullptr;
-    VkQueue          graphic_queue             = nullptr;
-    float            graphic_queue_priority    = 1.0f;
-    VkCommandPool    command_pool              = nullptr;
-    VkPipeline       graphics_pipeline         = nullptr;
-    VkDeviceMemory   mesh_vertex_buffer_memory = nullptr;
+    float          graphic_queue_priority    = 1.0f;
+    VkCommandPool  command_pool              = nullptr;
+    VkPipeline     graphics_pipeline         = nullptr;
+    VkDeviceMemory mesh_vertex_buffer_memory = nullptr;
 
     VkViewport viewport = {};
     VkRect2D   scissor  = {};
@@ -116,5 +119,4 @@ namespace Prism
 
     bool should_quit = false;
   };
-
-} // Prism
+} // namespace Prism

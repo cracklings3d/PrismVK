@@ -16,9 +16,9 @@ namespace Prism::HAL::Vulkan
     [[nodiscard]] Physical_device_properties   get_device_properties() const override;
     [[nodiscard]] std::unique_ptr<HAL::Device> create_device(const Device_create_info &device_create_info) override;
 
+    [[nodiscard]] VkPhysicalDevice *get_vk_physical_device() const;
+
   private:
     std::shared_ptr<VkPhysicalDevice> _vk_physical_device = nullptr;
-    ;
   };
-
 } // namespace Prism::HAL::Vulkan
