@@ -12,6 +12,7 @@
 #include "../HAL/Instance.h"
 #include "../HAL/Queue.h"
 #include "../HAL/Render_pass.h"
+#include "../HAL/Shader_module.h"
 #include "../HAL/Surface.h"
 #include "../HAL/Swapchain.h"
 #include "../HAL/Window.h"

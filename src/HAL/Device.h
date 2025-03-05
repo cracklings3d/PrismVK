@@ -34,6 +34,8 @@ namespace Prism::HAL
     create_render_pass(const Render_pass_create_info &create_info) const = 0;
     [[nodiscard]] virtual std::unique_ptr<Shader_module>
     create_shader_module(const Shader_module_create_info &create_info) const = 0;
+
+    virtual void wait_idle() const = 0;
   };
 
   /**

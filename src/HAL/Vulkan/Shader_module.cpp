@@ -14,19 +14,17 @@ namespace Prism::HAL::Vulkan
     return result;
   }
 
-  Shader_module::Shader_module(VkDevice device, const HAL::Shader_module_create_info &hal_create_info)
-      : _device(device), _shader_module(VK_NULL_HANDLE)
+  Shader_module::Shader_module(VkShaderModule shader_module, VkDevice *device)
+      : _vk_shader_module(std::make_unique<VkShaderModule>(shader_module)), _vk_device(device)
   {
   }
 
   Shader_module::~Shader_module()
   {
-    if (_shader_module != VK_NULL_HANDLE)
+    if (_vk_shader_module != VK_NULL_HANDLE)
     {
-      vkDestroyShaderModule(_device, _shader_module, nullptr);
-      _shader_module = VK_NULL_HANDLE;
+      vkDestroyShaderModule(*_vk_device, *_vk_shader_module, nullptr);
+      _vk_shader_module = VK_NULL_HANDLE;
     }
   }
-
-  void *Shader_module::get_native_handle() const { return (void *)_shader_module; }
 } // namespace Prism::HAL::Vulkan

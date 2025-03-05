@@ -66,6 +66,12 @@ namespace Prism::HAL::Vulkan
     return std::make_unique<Vulkan::Shader_module>(std::move(vk_shader_module), _vk_device.get());
   }
 
+  void Device::wait_idle() const
+  {
+    VkResult result = vkDeviceWaitIdle(*_vk_device);
+    check_result(result, __func__);
+  }
+
   VkDevice *Device::get_vk_device() const { return _vk_device.get(); }
 
   [[nodiscard]] std::unique_ptr<HAL::Queue> Device::get_queue(uint32_t queue_family_index, uint32_t queue_index) const

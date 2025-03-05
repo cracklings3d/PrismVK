@@ -431,7 +431,7 @@ namespace Prism
       frame_index++;
     }
 
-    vkDeviceWaitIdle(device);
+    _device->wait_idle();
   }
 
   std::unique_ptr<HAL::Shader_module> Engine::create_shader_module(const std::string &file_path) const

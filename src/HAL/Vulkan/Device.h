@@ -27,6 +27,8 @@ namespace Prism::HAL::Vulkan
     [[nodiscard]] virtual std::unique_ptr<HAL::Shader_module>
     create_shader_module(const HAL::Shader_module_create_info &create_info) const override;
 
+    virtual void wait_idle() const override;
+
     [[nodiscard]] VkDevice *get_vk_device() const;
 
   private:
