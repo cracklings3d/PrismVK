@@ -24,6 +24,16 @@ namespace Prism::HAL
     B8G8R8A8_SRGB,
   };
 
+  enum class Sample_count
+  {
+    Unknown,
+    Count_1,
+    Count_2,
+    Count_4,
+    Count_8,
+    Count_16,
+  };
+
   enum class Color_space
   {
     Unknown,

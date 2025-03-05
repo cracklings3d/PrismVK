@@ -12,6 +12,10 @@ namespace Prism::HAL
   struct Device_create_info;
   struct Swapchain_create_info;
   struct Image_view_create_info;
+  struct Attachment_description;
+  struct Attachment_reference;
+  struct Subpass_description;
+  struct Render_pass_create_info;
 
   enum class Image_format;
   enum class Color_space;
@@ -33,6 +37,10 @@ namespace Prism::HAL::Vulkan
   VkSharingMode            convert(const HAL::Image_sharing_mode &image_sharing_mode);
   VkPresentModeKHR         convert(const HAL::Image_present_mode &image_present_mode);
   VkImageViewCreateInfo    convert(const HAL::Image_view_create_info &image_view_create_info);
+  VkAttachmentDescription  convert(const HAL::Attachment_description &attachment_description);
+  VkAttachmentReference    convert(const HAL::Attachment_reference &attachment_reference);
+  VkSubpassDescription     convert(const HAL::Subpass_description &subpass_description);
+  VkRenderPassCreateInfo   convert(const HAL::Render_pass_create_info &render_pass_create_info);
 
   /************************* Vulkan to HAL *************************/
   Physical_device_properties convert(const VkPhysicalDeviceProperties &vk_physical_device_properties);

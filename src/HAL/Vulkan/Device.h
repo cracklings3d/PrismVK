@@ -10,6 +10,8 @@
 namespace Prism::HAL::Vulkan
 {
   class Physical_device;
+  class Render_pass;
+  class Render_pass_create_info;
 
   class Device : public HAL::Device
   {
@@ -20,6 +22,10 @@ namespace Prism::HAL::Vulkan
     [[nodiscard]] virtual std::unique_ptr<HAL::Queue> get_graphics_queue() const override;
     [[nodiscard]] virtual std::unique_ptr<HAL::Swapchain>
     create_swapchain(const HAL::Swapchain_create_info &create_info) const override;
+    [[nodiscard]] virtual std::unique_ptr<HAL::Render_pass>
+    create_render_pass(const HAL::Render_pass_create_info &create_info) const override;
+    [[nodiscard]] virtual std::unique_ptr<HAL::Shader_module>
+    create_shader_module(const HAL::Shader_module_create_info &create_info) const override;
 
     [[nodiscard]] VkDevice *get_vk_device() const;
 

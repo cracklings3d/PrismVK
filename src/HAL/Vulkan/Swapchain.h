@@ -24,9 +24,9 @@ namespace Prism::HAL::Vulkan
 
     ~Swapchain() override;
 
-    [[nodiscard]] std::vector<HAL::Image>      get_images() const override;
-    [[nodiscard]] std::vector<HAL::Image_view> create_image_views(
-        const HAL::Image_view_create_info &create_info, const std::vector<HAL::Image> &images) const override;
+    [[nodiscard]] std::vector<std::unique_ptr<HAL::Image>> get_images() const override;
+    [[nodiscard]] std::vector<HAL::Image_view>             create_image_views(
+        const HAL::Image_view_create_info &create_info, const std::vector<std::unique_ptr<HAL::Image>> &images) const override;
 
     [[nodiscard]] VkSwapchainKHR *get_vk_swapchain() const { return _vk_swapchain.get(); }
 

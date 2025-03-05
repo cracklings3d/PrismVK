@@ -1,4 +1,5 @@
 #include "Image.h"
+#include "Error.h"
 #include "Image_view.h"
 #include "Param_converters.h"
 
@@ -13,11 +14,13 @@ namespace Prism::HAL::Vulkan
     }
   }
 
-  Image_view Image::create_image_view(const Image_view_create_info &create_info) const
+  HAL::Image_view Image::create_view(const Image_view_create_info &create_info) const
   {
     VkImageViewCreateInfo vk_image_view_create_info = convert(create_info);
     VkImageView           vk_image_view;
-    vkCreateImageView(*_vk_device, &vk_image_view_create_info, nullptr, &vk_image_view);
+    VkResult              result = vkCreateImageView(*_vk_device, &vk_image_view_create_info, nullptr, &vk_image_view);
+
+    check_result(result, __func__);
 
     return Image_view(std::move(vk_image_view), _vk_device);
   }

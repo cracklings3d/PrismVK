@@ -20,19 +20,7 @@ namespace Prism::HAL
 
   struct Image_view_create_info
   {
-    Image       &image;
+    Image       *image;
     Image_format image_format;
-  };
-
-  class Image_view_create_info_builder
-  {
-  public:
-    Image_view_create_info_builder &image(Image &image);
-    Image_view_create_info_builder &image_format(Image_format image_format);
-    Image_view_create_info          build();
-
-  private:
-    Image       *_image;
-    Image_format _image_format;
   };
 } // namespace Prism::HAL

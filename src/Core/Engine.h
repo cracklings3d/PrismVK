@@ -11,6 +11,7 @@
 #include "../HAL/Image_view.h"
 #include "../HAL/Instance.h"
 #include "../HAL/Queue.h"
+#include "../HAL/Render_pass.h"
 #include "../HAL/Surface.h"
 #include "../HAL/Swapchain.h"
 #include "../HAL/Window.h"
@@ -25,7 +26,7 @@ namespace Prism
     void initialize();
 
   private:
-    [[nodiscard]] VkShaderModule create_shader_module(const std::string &file_path) const;
+    [[nodiscard]] std::unique_ptr<HAL::Shader_module> create_shader_module(const std::string &file_path) const;
 
     [[nodiscard]] uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties) const;
 
@@ -76,8 +77,13 @@ namespace Prism
     std::unique_ptr<HAL::Queue>     _queue     = nullptr;
     std::unique_ptr<HAL::Swapchain> _swapchain = nullptr;
 
-    std::vector<HAL::Image>      _swapchain_images      = {};
-    std::vector<HAL::Image_view> _swapchain_image_views = {};
+    std::vector<std::unique_ptr<HAL::Image>>      _swapchain_images      = {};
+    std::vector<std::unique_ptr<HAL::Image_view>> _swapchain_image_views = {};
+
+    std::unique_ptr<HAL::Render_pass> _render_pass = nullptr;
+
+    std::unique_ptr<HAL::Shader_module> _vert_shader_module = nullptr;
+    std::unique_ptr<HAL::Shader_module> _frag_shader_module = nullptr;
 
   private:
     VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};

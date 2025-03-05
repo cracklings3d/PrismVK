@@ -5,6 +5,12 @@
 
 #include "../Image.h"
 
+namespace Prism::HAL
+{
+  struct Image_create_info;
+  struct Image_view_create_info;
+} // namespace Prism::HAL
+
 namespace Prism::HAL::Vulkan
 {
   class Image final : public HAL::Image
@@ -17,7 +23,7 @@ namespace Prism::HAL::Vulkan
 
     ~Image() override;
 
-    [[nodiscard]] Image_view create_image_view(const Image_view_create_info &create_info) const;
+    [[nodiscard]] HAL::Image_view create_view(const Image_view_create_info &create_info) const override;
 
     [[nodiscard]] VkImage *get_vk_image() const;
 

@@ -1,3 +1,8 @@
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Jan 24 2025       *
+ *****************************/
+
 #include "Engine.h"
 
 #include <SDL2/SDL_events.h>
@@ -8,10 +13,14 @@
 #include <stdexcept>
 #include <vector>
 
+#include "../HAL/Attachment_description.h"
 #include "../HAL/Device.h"
+#include "../HAL/Image.h"
 #include "../HAL/Image_view.h"
 #include "../HAL/Instance.h"
 #include "../HAL/Physical_device.h"
+#include "../HAL/Render_pass.h"
+#include "../HAL/Shader_module.h"
 #include "../HAL/Swapchain.h"
 #include "../HAL/Window.h"
 
@@ -65,15 +74,16 @@ namespace Prism
 
   void Engine::create_swapchain()
   {
-    HAL::Swapchain_create_info swapchain_create_info = HAL::Swapchain_create_info_builder(*_surface)
-                                                           .image_format(HAL::Image_format::B8G8R8A8_SRGB)
-                                                           .image_color_space(HAL::Color_space::SRGB_NONLINEAR)
-                                                           .image_extent({800, 600})
-                                                           .image_array_layers(1)
-                                                           .image_usage(HAL::Image_usage::COLOR_ATTACHMENT)
-                                                           .image_sharing_mode(HAL::Image_sharing_mode::EXCLUSIVE)
-                                                           .image_present_mode(HAL::Image_present_mode::FIFO)
-                                                           .build();
+    HAL::Swapchain_create_info swapchain_create_info;
+
+    swapchain_create_info.surface            = _surface.get();
+    swapchain_create_info.image_format       = HAL::Image_format::B8G8R8A8_SRGB;
+    swapchain_create_info.image_color_space  = HAL::Color_space::SRGB_NONLINEAR;
+    swapchain_create_info.image_extent       = {800, 600};
+    swapchain_create_info.image_array_layers = 1;
+    swapchain_create_info.image_usage        = HAL::Image_usage::COLOR_ATTACHMENT;
+    swapchain_create_info.image_sharing_mode = HAL::Image_sharing_mode::EXCLUSIVE;
+    swapchain_create_info.image_present_mode = HAL::Image_present_mode::FIFO;
 
     _swapchain = _device->create_swapchain(swapchain_create_info);
   }
@@ -82,51 +92,52 @@ namespace Prism
   {
     _swapchain_images = _swapchain->get_images();
 
-    HAL::Image_view_create_info image_view_create_info = HAL::Image_view_create_info_builder()
-                                                             .image(_swapchain_images[0])
-                                                             .image_format(HAL::Image_format::B8G8R8A8_SRGB)
-                                                             .build();
+    for (const std::unique_ptr<HAL::Image> &image : _swapchain_images)
+    {
+      HAL::Image_view_create_info image_view_create_info;
+      image_view_create_info.image        = image.get();
+      image_view_create_info.image_format = HAL::Image_format::B8G8R8A8_SRGB;
 
-    _swapchain_image_views = _swapchain->create_image_views(image_view_create_info, _swapchain_images);
+      HAL::Image_view                  image_view     = image->create_view(image_view_create_info);
+      std::unique_ptr<HAL::Image_view> image_view_ptr = std::make_unique<HAL::Image_view>(std::move(image_view));
+
+      _swapchain_image_views.push_back(std::move(image_view_ptr));
+    }
   }
 
   void Engine::create_render_pass()
   {
-    VkAttachmentDescription color_attachment_description = {};
-    color_attachment_description.format                  = VK_FORMAT_B8G8R8A8_SRGB;
-    color_attachment_description.samples                 = VK_SAMPLE_COUNT_1_BIT;
-    color_attachment_description.loadOp                  = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    color_attachment_description.storeOp                 = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment_description.stencilLoadOp           = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    color_attachment_description.stencilStoreOp          = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    color_attachment_description.initialLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
-    color_attachment_description.finalLayout             = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    HAL::Attachment_description attachment_description;
 
-    VkAttachmentReference color_attachment = {};
-    color_attachment.attachment            = 0;
-    color_attachment.layout                = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    attachment_description.format           = HAL::Image_format::B8G8R8A8_SRGB;
+    attachment_description.samples          = HAL::Sample_count::Count_1;
+    attachment_description.load_op          = HAL::Attachment_load_op::Clear;
+    attachment_description.store_op         = HAL::Attachment_store_op::Store;
+    attachment_description.stencil_load_op  = HAL::Attachment_load_op::Dont_care;
+    attachment_description.stencil_store_op = HAL::Attachment_store_op::Dont_care;
+    attachment_description.initial_layout   = HAL::Image_layout::Undefined;
+    attachment_description.final_layout     = HAL::Image_layout::Present_src;
 
-    VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments    = &color_attachment;
+    HAL::Attachment_reference color_attachment;
 
-    VkRenderPassCreateInfo render_pass_info = {};
-    render_pass_info.sType                  = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    render_pass_info.attachmentCount        = 1;
-    render_pass_info.pAttachments           = &color_attachment_description;
-    render_pass_info.subpassCount           = 1;
-    render_pass_info.pSubpasses             = &subpass;
+    color_attachment.attachment = 0;
+    color_attachment.layout     = HAL::Image_layout::Color_attachment_optimal;
 
-    assert(
-        vkCreateRenderPass(device, &render_pass_info, nullptr, &render_pass) == VK_SUCCESS
-        && "failed to create render pass!");
+    HAL::Subpass_description subpass;
+    subpass.pipeline_bind_point = HAL::Pipeline_bind_point::Graphics;
+    subpass.color_attachments.push_back(color_attachment);
+
+    HAL::Render_pass_create_info render_pass_create_info;
+    render_pass_create_info.attachments = {attachment_description};
+    render_pass_create_info.subpasses   = {subpass};
+
+    _render_pass = _device->create_render_pass(render_pass_create_info);
   }
 
   void Engine::create_shader_modules()
   {
-    vert_shader_module = create_shader_module("Shader/default.vert.spv");
-    frag_shader_module = create_shader_module("Shader/default.frag.spv");
+    _vert_shader_module = create_shader_module("Shader/default.vert.spv");
+    _frag_shader_module = create_shader_module("Shader/default.frag.spv");
   }
 
   void Engine::create_pipeline()
@@ -423,7 +434,7 @@ namespace Prism
     vkDeviceWaitIdle(device);
   }
 
-  VkShaderModule Engine::create_shader_module(const std::string &file_path) const
+  std::unique_ptr<HAL::Shader_module> Engine::create_shader_module(const std::string &file_path) const
   {
     std::ifstream file(file_path);
 
@@ -434,18 +445,13 @@ namespace Prism
 
     std::vector<char> spirv((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
-    VkShaderModuleCreateInfo create_info = {};
-    create_info.sType                    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    create_info.codeSize                 = spirv.size();
-    create_info.pCode                    = reinterpret_cast<const uint32_t *>(spirv.data());
+    std::string spirv_code(spirv.begin(), spirv.end());
 
-    VkShaderModule shader_module;
-    if (vkCreateShaderModule(device, &create_info, nullptr, &shader_module) != VK_SUCCESS)
-    {
-      throw std::runtime_error("failed to create shader module!");
-    }
+    HAL::Shader_module_create_info create_info = {};
 
-    return shader_module;
+    create_info.code = spirv_code;
+
+    return _device->create_shader_module(create_info);
   }
 
   uint32_t Engine::find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties) const
