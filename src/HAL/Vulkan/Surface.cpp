@@ -1,8 +1,7 @@
 // Created by cr on 2/22/25.
 
-#include "Surface.h"
-#include "../Surface.h"
-#include "Instance.h" // Need Vulkan Instance
+#include "HAL/Vulkan/Surface.h"
+#include "HAL/Vulkan/Instance.h" // Need Vulkan Instance
 
 #include <SDL2/SDL_vulkan.h>
 

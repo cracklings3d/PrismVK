@@ -1,8 +1,11 @@
-// Created by cr on 2/21/25.
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Feb 21 2025      *
+ *****************************/
 
-#include "Instance.h"
-#include "Vulkan/Instance.h"
-#include "HAL.h"
+#include "HAL/Instance.h"
+#include "HAL/HAL.h"
+#include "HAL/Vulkan/Instance.h"
 
 namespace Prism::HAL
 {
@@ -11,9 +14,9 @@ namespace Prism::HAL
     switch (Global_config::get().get_render_api())
     {
     case Render_api::Vulkan:
-      return std::make_unique<Vulkan::Instance>(create_info);
+      return Vulkan::create_instance(create_info);
     default:
       throw std::runtime_error("Unsupported render API!");
     }
   }
-} // Prism::HAL
+} // namespace Prism::HAL

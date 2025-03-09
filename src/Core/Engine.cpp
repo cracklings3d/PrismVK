@@ -3,7 +3,7 @@
  * Created Jan 24 2025       *
  *****************************/
 
-#include "Engine.h"
+#include "Core/Engine.h"
 
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_vulkan.h>
@@ -13,16 +13,18 @@
 #include <stdexcept>
 #include <vector>
 
-#include "../HAL/Attachment_description.h"
-#include "../HAL/Device.h"
-#include "../HAL/Image.h"
-#include "../HAL/Image_view.h"
-#include "../HAL/Instance.h"
-#include "../HAL/Physical_device.h"
-#include "../HAL/Render_pass.h"
-#include "../HAL/Shader_module.h"
-#include "../HAL/Swapchain.h"
-#include "../HAL/Window.h"
+#include "HAL/Attachment_description.h"
+#include "HAL/Device.h"
+#include "HAL/Image.h"
+#include "HAL/Instance.h"
+#include "HAL/Physical_device.h"
+#include "HAL/Pipeline.h"
+#include "HAL/Primitive.h"
+#include "HAL/Render_pass.h"
+#include "HAL/Shader.h"
+#include "HAL/Swapchain.h"
+#include "HAL/Viewport.h"
+#include "HAL/Window.h"
 
 #include "../Resource/TriangleMesh.h"
 
@@ -65,7 +67,7 @@ namespace Prism
     device_queue_create_info.queue_priorities   = std::make_shared<std::vector<float>>(1.0f);
 
     HAL::Device_create_info device_create_info;
-    device_create_info.queue_infos = {device_queue_create_info};
+    device_create_info.queue_create_infos = {device_queue_create_info};
 
     _device = _physical_device->create_device(device_create_info);
     _queue  = _device->get_graphics_queue();
@@ -95,13 +97,11 @@ namespace Prism
     for (const std::unique_ptr<HAL::Image> &image : _swapchain_images)
     {
       HAL::Image_view_create_info image_view_create_info;
+
       image_view_create_info.image        = image.get();
       image_view_create_info.image_format = HAL::Image_format::B8G8R8A8_SRGB;
 
-      HAL::Image_view                  image_view     = image->create_view(image_view_create_info);
-      std::unique_ptr<HAL::Image_view> image_view_ptr = std::make_unique<HAL::Image_view>(std::move(image_view));
-
-      _swapchain_image_views.push_back(std::move(image_view_ptr));
+      _swapchain_image_views.push_back(image->create_view(image_view_create_info));
     }
   }
 
@@ -140,116 +140,97 @@ namespace Prism
     _frag_shader_module = create_shader_module("Shader/default.frag.spv");
   }
 
-  void Engine::create_pipeline()
+  void Engine::create_graphics_pipeline()
   {
-    VkPipelineShaderStageCreateInfo vert_shader_stage_info = {};
-    vert_shader_stage_info.sType                           = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vert_shader_stage_info.stage                           = VK_SHADER_STAGE_VERTEX_BIT;
-    vert_shader_stage_info.module                          = vert_shader_module; // Assume vert_shader_module is created
-    vert_shader_stage_info.pName                           = "main";
+    HAL::Pipeline_shader_stage_create_info vert_shader_stage_info;
+    vert_shader_stage_info.shader_stage = HAL::Shader_stage::Vertex;
+    vert_shader_stage_info.module       = _vert_shader_module.get();
+    vert_shader_stage_info.entry_point  = "main";
 
-    VkPipelineShaderStageCreateInfo frag_shader_stage_info = {};
-    frag_shader_stage_info.sType                           = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    frag_shader_stage_info.stage                           = VK_SHADER_STAGE_FRAGMENT_BIT;
-    frag_shader_stage_info.module                          = frag_shader_module; // Assume frag_shader_module is created
-    frag_shader_stage_info.pName                           = "main";
+    HAL::Pipeline_shader_stage_create_info frag_shader_stage_info;
+    frag_shader_stage_info.shader_stage = HAL::Shader_stage::Fragment;
+    frag_shader_stage_info.module       = _frag_shader_module.get();
+    frag_shader_stage_info.entry_point  = "main";
 
-    VkPipelineShaderStageCreateInfo shader_stages[] = {vert_shader_stage_info, frag_shader_stage_info};
+    std::vector<HAL::Pipeline_shader_stage_create_info> shader_stages
+        = {vert_shader_stage_info, frag_shader_stage_info};
 
-    VkVertexInputBindingDescription vertex_binding_description = {};
-    vertex_binding_description.binding                         = 0;
-    vertex_binding_description.stride                          = sizeof(float) * 3;
-    vertex_binding_description.inputRate                       = VK_VERTEX_INPUT_RATE_VERTEX;
+    HAL::Vertex_input_binding_description vertex_input_binding_description;
+    vertex_input_binding_description.binding    = 0;
+    vertex_input_binding_description.stride     = sizeof(float) * 3;
+    vertex_input_binding_description.input_rate = HAL::Vertex_input_rate::Vertex;
 
-    VkVertexInputAttributeDescription vertex_attribute_description = {};
-    vertex_attribute_description.location                          = 0;
-    vertex_attribute_description.binding                           = 0;
-    vertex_attribute_description.format                            = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attribute_description.offset                            = 0;
+    HAL::Vertex_input_attribute_description vertex_input_attribute_description;
+    vertex_input_attribute_description.location = 0;
+    vertex_input_attribute_description.binding  = 0;
+    vertex_input_attribute_description.format   = HAL::Image_format::R32G32B32_SFLOAT;
+    vertex_input_attribute_description.offset   = 0;
 
-    VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
-    vertex_input_info.sType                                = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input_info.vertexBindingDescriptionCount        = 1;
-    vertex_input_info.pVertexBindingDescriptions           = &vertex_binding_description;
-    vertex_input_info.vertexAttributeDescriptionCount      = 1;
-    vertex_input_info.pVertexAttributeDescriptions         = &vertex_attribute_description;
+    HAL::Pipeline_vertex_input_state_create_info vertex_input_info;
+    vertex_input_info.binding_descriptions.push_back(vertex_input_binding_description);
+    vertex_input_info.attribute_descriptions.push_back(vertex_input_attribute_description);
 
-    VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
-    input_assembly.sType                                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.topology                               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable                 = VK_FALSE;
+    HAL::Pipeline_input_assembly_state_create_info input_assembly;
+    input_assembly.topology                 = HAL::Primitive_topology::Triangle_list;
+    input_assembly.primitive_restart_enable = false;
 
-    VkViewport viewport = {};
-    viewport.x          = 0.0f;
-    viewport.y          = 0.0f;
-    viewport.width      = 800.0f;
-    viewport.height     = 600.0f;
-    viewport.minDepth   = 0.0f;
-    viewport.maxDepth   = 1.0f;
+    HAL::Viewport viewport;
+    viewport.x         = 0.0f;
+    viewport.y         = 0.0f;
+    viewport.width     = 800.0f;
+    viewport.height    = 600.0f;
+    viewport.min_depth = 0.0f;
+    viewport.max_depth = 1.0f;
 
-    VkRect2D scissor = {};
-    scissor.offset   = {0, 0};
-    scissor.extent   = {800, 600};
+    HAL::Rect2D scissor;
+    scissor.offset = {0, 0};
+    scissor.extent = {800, 600};
 
-    VkPipelineViewportStateCreateInfo viewport_state = {};
-    viewport_state.sType                             = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.viewportCount                     = 1;
-    viewport_state.pViewports                        = &viewport;
-    viewport_state.scissorCount                      = 1;
-    viewport_state.pScissors                         = &scissor;
+    HAL::Pipeline_viewport_state_create_info viewport_state;
+    viewport_state.viewports.push_back(viewport);
+    viewport_state.scissors.push_back(scissor);
 
-    VkPipelineRasterizationStateCreateInfo rasterizer = {};
-    rasterizer.sType                                  = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizer.depthClampEnable                       = VK_FALSE;
-    rasterizer.rasterizerDiscardEnable                = VK_FALSE;
-    rasterizer.polygonMode                            = VK_POLYGON_MODE_FILL;
-    rasterizer.lineWidth                              = 1.0f;
-    rasterizer.cullMode                               = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace                              = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizer.depthBiasEnable                        = VK_FALSE;
+    HAL::Pipeline_rasterization_state_create_info rasterizer;
+    rasterizer.depth_clamp_enable        = false;
+    rasterizer.rasterizer_discard_enable = false;
+    rasterizer.polygon_mode              = HAL::Polygon_mode::Fill;
+    rasterizer.line_width                = 1.0f;
+    rasterizer.cull_mode                 = HAL::Cull_mode::Back;
+    rasterizer.front_face                = HAL::Front_face::Counter_clockwise;
+    rasterizer.depth_bias_enable         = false;
 
-    VkPipelineMultisampleStateCreateInfo multisampling = {};
-    multisampling.sType                                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.sampleShadingEnable                  = VK_FALSE;
-    multisampling.rasterizationSamples                 = VK_SAMPLE_COUNT_1_BIT;
+    HAL::Pipeline_multisample_state_create_info multisampling;
+    multisampling.rasterization_samples = HAL::Sample_count::Count_1;
+    multisampling.sample_shading_enable = false;
 
-    VkPipelineColorBlendAttachmentState color_blend_attachment = {};
-    color_blend_attachment.colorWriteMask
-        = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    color_blend_attachment.blendEnable = VK_FALSE;
+    HAL::Pipeline_color_blend_attachment_state color_blend_attachment;
+    color_blend_attachment.color_write_mask
+        = HAL::Color_component::R | HAL::Color_component::G | HAL::Color_component::B | HAL::Color_component::A;
+    color_blend_attachment.blend_enable = false;
 
-    VkPipelineColorBlendStateCreateInfo color_blending = {};
-    color_blending.sType                               = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color_blending.logicOpEnable                       = VK_FALSE;
-    color_blending.attachmentCount                     = 1;
-    color_blending.pAttachments                        = &color_blend_attachment;
+    HAL::Pipeline_color_blend_state_create_info color_blending;
+    color_blending.logic_op_enable = false;
+    color_blending.attachments.push_back(color_blend_attachment);
 
-    VkPipelineLayoutCreateInfo pipeline_layout_info = {};
-    pipeline_layout_info.sType                      = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    // pipeline_layout_info.setLayoutCount             = 1;
-    // pipeline_layout_info.pSetLayouts                = descriptor_sets.data();
+    HAL::Pipeline_layout_create_info pipeline_layout_create_info;
+    pipeline_layout_create_info.descriptor_set_layouts = {};
+    pipeline_layout_create_info.push_constant_ranges   = {};
 
-    assert(
-        vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &pipeline_layout) == VK_SUCCESS
-        && "failed to create pipeline layout!");
+    _pipeline_layout = _device->create_pipeline_layout(pipeline_layout_create_info);
 
-    VkGraphicsPipelineCreateInfo pipeline_info = {};
-    pipeline_info.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline_info.stageCount                   = 2;
-    pipeline_info.pStages                      = shader_stages;
-    pipeline_info.pVertexInputState            = &vertex_input_info;
-    pipeline_info.pInputAssemblyState          = &input_assembly;
-    pipeline_info.pViewportState               = &viewport_state;
-    pipeline_info.pRasterizationState          = &rasterizer;
-    pipeline_info.pMultisampleState            = &multisampling;
-    pipeline_info.pColorBlendState             = &color_blending;
-    pipeline_info.layout                       = pipeline_layout;
-    pipeline_info.renderPass                   = render_pass;
-    pipeline_info.subpass                      = 0;
+    HAL::Graphics_pipeline_create_info graphics_pipeline_create_info;
+    graphics_pipeline_create_info.stages               = shader_stages;
+    graphics_pipeline_create_info.vertex_input_state   = &vertex_input_info;
+    graphics_pipeline_create_info.input_assembly_state = &input_assembly;
+    graphics_pipeline_create_info.viewport_state       = &viewport_state;
+    graphics_pipeline_create_info.rasterization_state  = &rasterizer;
+    graphics_pipeline_create_info.multisample_state    = &multisampling;
+    graphics_pipeline_create_info.color_blend_state    = &color_blending;
+    graphics_pipeline_create_info.layout               = _pipeline_layout.get();
+    graphics_pipeline_create_info.render_pass          = _render_pass.get();
+    graphics_pipeline_create_info.subpass              = 0;
 
-    assert(
-        vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline) == VK_SUCCESS
-        && "failed to create graphics pipeline!");
+    _pipeline = _device->create_graphics_pipeline(graphics_pipeline_create_info);
   }
 
   void Engine::create_frame_buffers()
@@ -407,7 +388,7 @@ namespace Prism
     create_swapchain_image_views();
     create_render_pass();
     create_shader_modules();
-    create_pipeline();
+    create_graphics_pipeline();
     create_frame_buffers();
     create_vertex_buffer();
     create_command_pool();

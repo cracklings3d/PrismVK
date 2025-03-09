@@ -1,46 +1,22 @@
-#include "Param_converters.h"
+#include "HAL/Vulkan/Param_converters.h"
 
-#include "../Attachment_description.h"
-#include "../Device.h"
-#include "../Image_view.h"
-#include "../Instance.h"
-#include "../Render_pass.h"
-#include "../Swapchain.h"
+#include "HAL/Attachment_description.h"
+#include "HAL/Device.h"
+#include "HAL/Instance.h"
+#include "HAL/Render_pass.h"
+#include "HAL/Swapchain.h"
 
-#include "Image.h"
-#include "Surface.h"
+#include "HAL/Vulkan/Image.h"
+#include "HAL/Vulkan/Pipeline.h"
+#include "HAL/Vulkan/Shader.h"
+#include "HAL/Vulkan/Surface.h"
+#include "HAL/Vulkan/Viewport.h"
 
 namespace Prism::HAL::Vulkan
 {
   /*****************************************************************/
   /************************* HAL to Vulkan *************************/
   /*****************************************************************/
-
-  VkInstanceCreateInfo convert(const HAL::Instance_create_info &instance_create_info)
-  {
-    VkApplicationInfo application_info{};
-    application_info.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    application_info.pApplicationName   = instance_create_info.application_name.c_str();
-    application_info.applicationVersion = instance_create_info.application_version;
-    application_info.pEngineName        = instance_create_info.engine_name.c_str();
-    application_info.engineVersion      = instance_create_info.engine_version;
-
-    VkInstanceCreateInfo vk_instance_create_info{};
-    vk_instance_create_info.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    vk_instance_create_info.pApplicationInfo        = &application_info;
-    vk_instance_create_info.enabledExtensionCount   = instance_create_info.required_extensions.size();
-    vk_instance_create_info.ppEnabledExtensionNames = instance_create_info.required_extensions.data();
-    return vk_instance_create_info;
-  }
-
-  VkDeviceCreateInfo convert(const HAL::Device_create_info &device_create_info)
-  {
-    VkDeviceCreateInfo vk_device_create_info{};
-    vk_device_create_info.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    vk_device_create_info.enabledExtensionCount   = device_create_info.required_extensions.size();
-    vk_device_create_info.ppEnabledExtensionNames = device_create_info.required_extensions.data();
-    return vk_device_create_info;
-  }
 
   VkSwapchainCreateInfoKHR convert(const HAL::Swapchain_create_info &swapchain_create_info)
   {
@@ -77,6 +53,70 @@ namespace Prism::HAL::Vulkan
     }
   }
 
+  VkPolygonMode convert(const HAL::Polygon_mode &mode)
+  {
+    switch (mode)
+    {
+    case HAL::Polygon_mode::Fill:
+      return VK_POLYGON_MODE_FILL;
+    case HAL::Polygon_mode::Line:
+      return VK_POLYGON_MODE_LINE;
+    case HAL::Polygon_mode::Point:
+      return VK_POLYGON_MODE_POINT;
+    default:
+      throw std::runtime_error("Unsupported polygon mode");
+    }
+  }
+
+  VkCullModeFlags convert(const HAL::Cull_mode &mode)
+  {
+    switch (mode)
+    {
+    case HAL::Cull_mode::None:
+      return VK_CULL_MODE_NONE;
+    case HAL::Cull_mode::Back:
+      return VK_CULL_MODE_BACK_BIT;
+    case HAL::Cull_mode::Front:
+      return VK_CULL_MODE_FRONT_BIT;
+    case HAL::Cull_mode::Front_and_back:
+      return VK_CULL_MODE_FRONT_AND_BACK;
+    default:
+      throw std::runtime_error("Unsupported cull mode");
+    }
+  }
+
+  VkFrontFace convert(const HAL::Front_face &face)
+  {
+    switch (face)
+    {
+    case HAL::Front_face::Clockwise:
+      return VK_FRONT_FACE_CLOCKWISE;
+    case HAL::Front_face::Counter_clockwise:
+      return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    default:
+      throw std::runtime_error("Unsupported front face");
+    }
+  }
+
+  VkSampleCountFlagBits convert(const HAL::Sample_count &samples)
+  {
+    switch (samples)
+    {
+    case HAL::Sample_count::Count_1:
+      return VK_SAMPLE_COUNT_1_BIT;
+    case HAL::Sample_count::Count_2:
+      return VK_SAMPLE_COUNT_2_BIT;
+    case HAL::Sample_count::Count_4:
+      return VK_SAMPLE_COUNT_4_BIT;
+    case HAL::Sample_count::Count_8:
+      return VK_SAMPLE_COUNT_8_BIT;
+    case HAL::Sample_count::Count_16:
+      return VK_SAMPLE_COUNT_16_BIT;
+    default:
+      throw std::runtime_error("Unsupported sample count");
+    }
+  }
+
   VkColorSpaceKHR convert(const HAL::Color_space &image_color_space)
   {
     switch (image_color_space)
@@ -85,19 +125,6 @@ namespace Prism::HAL::Vulkan
       return VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     default:
       throw std::runtime_error("Unsupported image color space");
-    }
-  }
-
-  VkExtent2D convert(const HAL::Extent &image_extent) { return VkExtent2D{image_extent.width, image_extent.height}; }
-
-  VkImageUsageFlags convert(const HAL::Image_usage &image_usage)
-  {
-    switch (image_usage)
-    {
-    case HAL::Image_usage::COLOR_ATTACHMENT:
-      return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    default:
-      throw std::runtime_error("Unsupported image usage");
     }
   }
 
@@ -127,7 +154,7 @@ namespace Prism::HAL::Vulkan
   {
     VkImageViewCreateInfo vk           = {};
     vk.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    vk.image                           = *((Vulkan::Image &)hal.image).get_vk_image();
+    vk.image                           = *((Vulkan::Image &)hal.image).get_vk_handle();
     vk.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
     vk.format                          = convert(hal.image_format);
     vk.subresourceRange                = {};

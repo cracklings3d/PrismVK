@@ -1,18 +1,17 @@
 // Created by cr on 2/23/25.
 
-#include "Physical_device.h"
+#include "HAL/Device.h"
 
-#include "../Device.h"
-#include "Device.h"
-#include "Error.h"
-#include "Param_converters.h"
+#include "HAL/Vulkan/Device.h"
+#include "HAL/Vulkan/Error.h"
+#include "HAL/Vulkan/Param_converters.h"
+#include "HAL/Vulkan/Physical_device.h"
 
 namespace Prism::HAL::Vulkan
 {
   Physical_device::Physical_device(const VkPhysicalDevice &vk_physical_device)
       : _vk_physical_device(std::make_shared<VkPhysicalDevice>(vk_physical_device))
-  {
-  }
+  {}
 
   Physical_device_properties Physical_device::get_device_properties() const
   {
@@ -30,7 +29,7 @@ namespace Prism::HAL::Vulkan
 
     check_result(result, "Create_device");
 
-    return std::move(std::make_unique<Device>(vk_device));
+    return std::make_unique<Device>(vk_device);
   }
 
   VkPhysicalDevice *Physical_device::get_vk_physical_device() const { return _vk_physical_device.get(); }

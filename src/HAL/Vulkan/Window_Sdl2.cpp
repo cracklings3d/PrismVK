@@ -1,14 +1,13 @@
 // Created by cr on 2/19/25.
 
-#include "Window_Sdl2.h"
+#include "HAL/Vulkan/Window_Sdl2.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
 #include <cassert>
 
-#include "../Instance.h"
-#include "Instance.h"
-#include "Surface.h"
+#include "HAL/Vulkan/Instance.h"
+#include "HAL/Vulkan/Surface.h"
 
 Prism::HAL::Vulkan::Sdl2_manager &Prism::HAL::Vulkan::Sdl2_manager::get()
 {
@@ -86,6 +85,6 @@ std::unique_ptr<Prism::HAL::Surface> Prism::HAL::Vulkan::Window_Sdl2::create_sur
 {
   VkSurfaceKHR      surface;
   Vulkan::Instance &vulkan_instance = static_cast<Vulkan::Instance &>(instance);
-  assert(SDL_Vulkan_CreateSurface(_window, *vulkan_instance.get_vk_instance(), &surface) == SDL_TRUE);
-  return std::make_unique<Vulkan::Surface>(std::move(surface), vulkan_instance.get_vk_instance());
+  assert(SDL_Vulkan_CreateSurface(_window, *vulkan_instance.get_vk_handle(), &surface) == SDL_TRUE);
+  return std::make_unique<Vulkan::Surface>(std::move(surface), vulkan_instance.get_vk_handle());
 }

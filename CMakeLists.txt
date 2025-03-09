@@ -3,19 +3,20 @@ project(Prism)
 
 set(CMAKE_CXX_STANDARD 23)
 
+set(CORE_SRC_DIR src/Core)
+set(HAL_SRC_DIR src/HAL)
+set(HAL_VULKAN_SRC_DIR src/HAL/Vulkan)
+
 # add src/ as subdir
-add_subdirectory(src)
+add_subdirectory(${CORE_SRC_DIR})
+add_subdirectory(${HAL_SRC_DIR})
+add_subdirectory(${HAL_VULKAN_SRC_DIR})
 
-# find vulkan, include and link
 find_package(Vulkan REQUIRED)
-include_directories(${Vulkan_INCLUDE_DIRS})
-
-# find sdl2, include and link
 find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIRS})
-
 
 add_executable(PrismApp app.cpp)
+target_include_directories(PrismApp PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
-target_link_libraries(PrismApp ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES})
-target_link_libraries(PrismApp Prism::Prism)
+# target_link_libraries(PrismApp ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES})
+target_link_libraries(PrismApp Prism.Core)

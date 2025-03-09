@@ -1,11 +1,10 @@
-#include "Swapchain.h"
+#include "HAL/Vulkan/Swapchain.h"
 
 #include <vector>
 #include <vulkan/vulkan.h>
 
-#include "Image.h"
-#include "Image_view.h"
-#include "Param_converters.h"
+#include "HAL/Vulkan/Image.h"
+#include "HAL/Vulkan/Param_converters.h"
 
 namespace Prism::HAL::Vulkan
 {
@@ -48,7 +47,7 @@ namespace Prism::HAL::Vulkan
       VkImageView vk_image_view;
 
       VkImageViewCreateInfo vk_create_info = convert(create_info);
-      vk_create_info.image                 = *static_cast<Vulkan::Image *>(image.get())->get_vk_image();
+      vk_create_info.image                 = *static_cast<Vulkan::Image *>(image.get())->get_vk_handle();
 
       vkCreateImageView(*_vk_device, &vk_create_info, nullptr, &vk_image_view);
       vk_image_views.push_back(vk_image_view);

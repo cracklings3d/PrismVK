@@ -1,10 +1,11 @@
 // Created by cr on 2/21/25.
 
-#include "Window.h"
-#include "Vulkan/Window_Sdl2.h"
+#include "HAL/Window.h"
+#include "HAL/Vulkan/Window_Sdl2.h"
 
 namespace Prism::HAL
 {
+  // TODO: Separate window creation from HAL
   std::unique_ptr<Window> create_window(const Render_api &render_api)
   {
     switch (render_api)

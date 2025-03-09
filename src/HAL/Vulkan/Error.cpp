@@ -1,4 +1,5 @@
-#include "Error.h"
+#include "HAL/Vulkan/Error.h"
+
 #include <stdexcept>
 
 namespace Prism::HAL::Vulkan
