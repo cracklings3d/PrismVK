@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "HAL/Vulkan/Buffer.h"
+#include "HAL/Vulkan/Command.h"
 #include "HAL/Vulkan/Descriptor.h"
 #include "HAL/Vulkan/Device.h"
 #include "HAL/Vulkan/Error.h"
@@ -216,5 +217,16 @@ namespace Prism::HAL::Vulkan
     check_result(result, __func__);
 
     return std::make_unique<Vulkan::Buffer_view>(std::move(vk_buffer_view), _vk_handle.get());
+  }
+
+  std::unique_ptr<HAL::Command_pool> Device::create_command_pool(const HAL::Command_pool_create_info &create_info) const
+  {
+    VkCommandPoolCreateInfo vk_create_info = convert(create_info);
+    VkCommandPool           vk_command_pool;
+
+    VkResult result = vkCreateCommandPool(*_vk_handle, &vk_create_info, nullptr, &vk_command_pool);
+    check_result(result, __func__);
+
+    return std::make_unique<Vulkan::Command_pool>(std::move(vk_command_pool), _vk_handle.get());
   }
 } // namespace Prism::HAL::Vulkan

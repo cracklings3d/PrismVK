@@ -7,6 +7,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "HAL/Buffer.h"
+#include "HAL/Command.h"
 #include "HAL/Device.h"
 #include "HAL/Framebuffer.h"
 #include "HAL/Image.h"
@@ -93,6 +94,9 @@ namespace Prism
     std::unique_ptr<HAL::Pipeline>        _pipeline        = nullptr;
 
     std::unique_ptr<HAL::Buffer> _vertex_buffer = nullptr;
+
+    std::unique_ptr<HAL::Command_pool>                _command_pool    = nullptr;
+    std::vector<std::unique_ptr<HAL::Command_buffer>> _command_buffers = {};
 
   private:
     VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};

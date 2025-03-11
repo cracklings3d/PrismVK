@@ -42,6 +42,8 @@ namespace Prism::HAL::Vulkan
     create_buffer(const HAL::Buffer_create_info &create_info) const override;
     [[nodiscard]] virtual std::unique_ptr<HAL::Buffer_view>
     create_buffer_view(const HAL::Buffer_view_create_info &create_info) const override;
+    [[nodiscard]] virtual std::unique_ptr<HAL::Command_pool>
+    create_command_pool(const HAL::Command_pool_create_info& create_info) const override;
 
     virtual void wait_idle() const override;
 

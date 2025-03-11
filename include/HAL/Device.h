@@ -21,6 +21,7 @@ namespace Prism::HAL
   class Framebuffer;
   class Buffer;
   class Buffer_view;
+  class Command_pool;
 
   struct Swapchain_create_info;
   struct Render_pass_create_info;
@@ -31,6 +32,7 @@ namespace Prism::HAL
   struct Framebuffer_create_info;
   struct Buffer_create_info;
   struct Buffer_view_create_info;
+  struct Command_pool_create_info;
 
   /**
    * @brief Information required to create a command queue
@@ -77,6 +79,9 @@ namespace Prism::HAL
     create_buffer_view(const Buffer_view_create_info &create_info) const = 0;
 
     virtual void wait_idle() const = 0;
+
+    [[nodiscard]] virtual std::unique_ptr<Command_pool>
+    create_command_pool(const Command_pool_create_info& create_info) const = 0;
   };
 
 } // namespace Prism::HAL

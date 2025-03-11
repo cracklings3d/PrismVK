@@ -15,6 +15,7 @@
 
 #include "HAL/Attachment_description.h"
 #include "HAL/Buffer.h"
+#include "HAL/Command.h"
 #include "HAL/Device.h"
 #include "HAL/Framebuffer.h"
 #include "HAL/Image.h"
@@ -264,55 +265,25 @@ namespace Prism
         = HAL::Memory_property::Host_visible | HAL::Memory_property::Host_coherent;
 
     _vertex_buffer = _device->create_buffer(vertex_buffer_info);
-
-    // VkBufferCreateInfo vertex_buffer_info = {};
-    // vertex_buffer_info.sType              = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    // vertex_buffer_info.size               = sizeof(float) * vertex_positions.size();
-    // vertex_buffer_info.usage              = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    // vertex_buffer_info.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
-
-
-      }
+  }
 
   void Engine::create_command_pool()
   {
-    VkCommandPoolCreateInfo pool_info = {};
-    pool_info.sType                   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    pool_info.flags                   = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    pool_info.queueFamilyIndex        = 0;
+    HAL::Command_pool_create_info command_pool_create_info;
+    command_pool_create_info.queue_family_index = 0;
+    command_pool_create_info.flags              = HAL::Command_pool_create_flags::Reset_command_buffer;
 
-    const auto create_command_pool_result = vkCreateCommandPool(device, &pool_info, nullptr, &command_pool);
-    if (create_command_pool_result == VK_ERROR_OUT_OF_HOST_MEMORY)
-    {
-      throw std::runtime_error("failed to create command pool: out of host memory!");
-    }
-    if (create_command_pool_result == VK_ERROR_OUT_OF_DEVICE_MEMORY)
-    {
-      throw std::runtime_error("failed to create command pool: out of device memory!");
-    }
-    assert(create_command_pool_result == VK_SUCCESS);
+    _command_pool = _device->create_command_pool(command_pool_create_info);
   }
 
   void Engine::create_command_buffers()
   {
-    command_buffers.resize(swap_chain_size);
-    VkCommandBufferAllocateInfo command_buffer_allocate_info = {};
-    command_buffer_allocate_info.sType                       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    command_buffer_allocate_info.commandPool                 = command_pool;
-    command_buffer_allocate_info.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    command_buffer_allocate_info.commandBufferCount          = static_cast<uint32_t>(command_buffers.size());
+    HAL::Command_buffer_allocate_info command_buffer_allocate_info;
 
-    const auto allocate_command_buffer_result
-        = vkAllocateCommandBuffers(device, &command_buffer_allocate_info, command_buffers.data());
-    if (allocate_command_buffer_result == VK_ERROR_OUT_OF_HOST_MEMORY)
-    {
-      throw std::runtime_error("failed to allocate command buffer: out of host memory!");
-    }
-    if (allocate_command_buffer_result == VK_ERROR_OUT_OF_DEVICE_MEMORY)
-    {
-      throw std::runtime_error("failed to allocate command buffer: out of device memory!");
-    }
-    assert(allocate_command_buffer_result == VK_SUCCESS);
+    command_buffer_allocate_info.command_buffer_count = _swapchain_image_views.size();
+    command_buffer_allocate_info.level                = HAL::Command_buffer_level::Primary;
+
+    _command_buffers = _command_pool->allocate_command_buffers(command_buffer_allocate_info);
   }
 
   void Engine::create_index_buffer()
