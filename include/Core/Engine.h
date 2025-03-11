@@ -6,7 +6,9 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
+#include "HAL/Buffer.h"
 #include "HAL/Device.h"
+#include "HAL/Framebuffer.h"
 #include "HAL/Image.h"
 #include "HAL/Instance.h"
 #include "HAL/Pipeline.h"
@@ -78,8 +80,9 @@ namespace Prism
     std::unique_ptr<HAL::Queue>     _queue     = nullptr;
     std::unique_ptr<HAL::Swapchain> _swapchain = nullptr;
 
-    std::vector<std::unique_ptr<HAL::Image>>      _swapchain_images      = {};
-    std::vector<std::unique_ptr<HAL::Image_view>> _swapchain_image_views = {};
+    std::vector<std::unique_ptr<HAL::Image>>       _swapchain_images      = {};
+    std::vector<std::unique_ptr<HAL::Image_view>>  _swapchain_image_views = {};
+    std::vector<std::unique_ptr<HAL::Framebuffer>> _framebuffers          = {};
 
     std::unique_ptr<HAL::Render_pass> _render_pass = nullptr;
 
@@ -88,6 +91,8 @@ namespace Prism
 
     std::unique_ptr<HAL::Pipeline_layout> _pipeline_layout = nullptr;
     std::unique_ptr<HAL::Pipeline>        _pipeline        = nullptr;
+
+    std::unique_ptr<HAL::Buffer> _vertex_buffer = nullptr;
 
   private:
     VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};

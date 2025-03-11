@@ -21,7 +21,7 @@ namespace Prism::HAL::Vulkan
   {
   public:
     ~Device() override;
-    explicit Device(const VkDevice &vk_device);
+    explicit Device(const VkDevice &vk_device, VkPhysicalDevice *vk_physical_device);
 
     [[nodiscard]] virtual std::unique_ptr<HAL::Queue> get_graphics_queue() const override;
     [[nodiscard]] virtual std::unique_ptr<HAL::Swapchain>
@@ -36,14 +36,24 @@ namespace Prism::HAL::Vulkan
     create_pipeline_layout(const HAL::Pipeline_layout_create_info &create_info) const override;
     [[nodiscard]] virtual std::unique_ptr<HAL::Pipeline>
     create_graphics_pipeline(const HAL::Graphics_pipeline_create_info &create_info) const override;
-
+    [[nodiscard]] virtual std::unique_ptr<HAL::Framebuffer>
+    create_framebuffer(const HAL::Framebuffer_create_info &create_info) const override;
+    [[nodiscard]] virtual std::unique_ptr<HAL::Buffer>
+    create_buffer(const HAL::Buffer_create_info &create_info) const override;
+    [[nodiscard]] virtual std::unique_ptr<HAL::Buffer_view>
+    create_buffer_view(const HAL::Buffer_view_create_info &create_info) const override;
 
     virtual void wait_idle() const override;
 
-    [[nodiscard]] VkDevice *get_vk_handle() const;
+    [[nodiscard]] VkDevice *get_vk_handle() const { return _vk_handle.get(); }
 
   private:
-    std::unique_ptr<VkDevice> _vk_device = nullptr;
+    uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties) const;
+
+  private:
+    std::unique_ptr<VkDevice> _vk_handle = nullptr;
+
+    VkPhysicalDevice *_vk_physical_device = nullptr;
 
     [[nodiscard]] std::unique_ptr<HAL::Queue> get_queue(uint32_t queue_family_index, uint32_t queue_index) const;
   };

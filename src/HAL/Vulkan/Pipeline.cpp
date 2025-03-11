@@ -111,9 +111,12 @@ namespace Prism::HAL::Vulkan
   VkPushConstantRange convert(const HAL::Push_constant_range &info)
   {
     VkPushConstantRange vk_info{};
+
     vk_info.stageFlags = convert(info.stage_flags);
     vk_info.offset     = info.offset;
     vk_info.size       = info.size;
+
+    return vk_info;
   }
 
   VkVertexInputBindingDescription convert(const HAL::Vertex_input_binding_description &info)

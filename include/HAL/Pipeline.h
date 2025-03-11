@@ -10,7 +10,6 @@
 
 #include "HAL/Descriptor.h"
 #include "HAL/Image.h"
-#include "HAL/Pipeline.h"
 #include "HAL/Primitive.h"
 
 namespace Prism::HAL
@@ -96,7 +95,7 @@ namespace Prism::HAL
     A = 0x08
   };
 
-  Color_component operator|(Color_component a, Color_component b)
+  inline Color_component operator|(Color_component a, Color_component b)
   {
     return static_cast<Color_component>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
   }

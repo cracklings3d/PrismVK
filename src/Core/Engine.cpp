@@ -14,7 +14,9 @@
 #include <vector>
 
 #include "HAL/Attachment_description.h"
+#include "HAL/Buffer.h"
 #include "HAL/Device.h"
+#include "HAL/Framebuffer.h"
 #include "HAL/Image.h"
 #include "HAL/Instance.h"
 #include "HAL/Physical_device.h"
@@ -42,7 +44,7 @@ namespace Prism
     _instance = HAL::create_instance(std::move(instance_create_info));
   }
 
-  void Engine::create_surface() { _surface = _window->create_surface(*_instance); }
+  void Engine::create_surface() { _surface = _window->create_surface(_instance.get()); }
 
   void Engine::select_physical_device()
   {
@@ -235,21 +237,18 @@ namespace Prism
 
   void Engine::create_frame_buffers()
   {
-    swap_chain_frame_buffers.resize(swap_chain_size);
-    for (size_t i = 0; i < swap_chain_size; i++)
+    for (const auto &image_view : _swapchain_image_views)
     {
-      VkFramebufferCreateInfo framebuffer_info = {};
-      framebuffer_info.sType                   = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-      framebuffer_info.renderPass              = render_pass;
-      framebuffer_info.attachmentCount         = 1;
-      framebuffer_info.pAttachments            = &swap_chain_image_views[i];
-      framebuffer_info.width                   = 800;
-      framebuffer_info.height                  = 600;
-      framebuffer_info.layers                  = 1;
+      auto extent = _window->get_extent();
 
-      assert(
-          vkCreateFramebuffer(device, &framebuffer_info, nullptr, &swap_chain_frame_buffers[i]) == VK_SUCCESS
-          && "failed to create framebuffer!");
+      HAL::Framebuffer_create_info framebuffer_create_info;
+      framebuffer_create_info.render_pass = _render_pass.get();
+      framebuffer_create_info.attachments = {image_view.get()};
+      framebuffer_create_info.width       = extent.width;
+      framebuffer_create_info.height      = extent.height;
+      framebuffer_create_info.layers      = 1;
+
+      _framebuffers.push_back(_device->create_framebuffer(framebuffer_create_info));
     }
   }
 
@@ -257,40 +256,23 @@ namespace Prism
   {
     const std::vector vertex_positions = Triangle_mesh::get_vertex_positions();
 
-    VkBufferCreateInfo vertex_buffer_info = {};
-    vertex_buffer_info.sType              = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    vertex_buffer_info.size               = sizeof(float) * vertex_positions.size();
-    vertex_buffer_info.usage              = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    vertex_buffer_info.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
+    HAL::Buffer_create_info vertex_buffer_info;
+    vertex_buffer_info.size         = sizeof(float) * vertex_positions.size();
+    vertex_buffer_info.usage        = HAL::Buffer_usage::Vertex_buffer;
+    vertex_buffer_info.sharing_mode = HAL::Sharing_mode::Exclusive;
+    vertex_buffer_info.desired_memory_properties
+        = HAL::Memory_property::Host_visible | HAL::Memory_property::Host_coherent;
 
-    assert(
-        vkCreateBuffer(device, &vertex_buffer_info, nullptr, &mesh_vertex_buffer) == VK_SUCCESS
-        && "failed to create vertex buffer!");
+    _vertex_buffer = _device->create_buffer(vertex_buffer_info);
 
-    VkMemoryRequirements vertex_buffer_memory_requirements;
-    vkGetBufferMemoryRequirements(device, mesh_vertex_buffer, &vertex_buffer_memory_requirements);
+    // VkBufferCreateInfo vertex_buffer_info = {};
+    // vertex_buffer_info.sType              = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    // vertex_buffer_info.size               = sizeof(float) * vertex_positions.size();
+    // vertex_buffer_info.usage              = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    // vertex_buffer_info.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
 
-    VkMemoryPropertyFlags desired_memory_property_flags
-        = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-    VkMemoryAllocateInfo vertex_buffer_memory_info = {};
-
-    vertex_buffer_memory_info.sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    vertex_buffer_memory_info.allocationSize = vertex_buffer_memory_requirements.size;
-    vertex_buffer_memory_info.memoryTypeIndex
-        = find_memory_type(vertex_buffer_memory_requirements.memoryTypeBits, desired_memory_property_flags);
-
-    assert(
-        vkAllocateMemory(device, &vertex_buffer_memory_info, nullptr, &mesh_vertex_buffer_memory) == VK_SUCCESS
-        && "failed to allocate vertex buffer memory!");
-
-    vkBindBufferMemory(device, mesh_vertex_buffer, mesh_vertex_buffer_memory, 0);
-
-    void *data;
-    vkMapMemory(device, mesh_vertex_buffer_memory, 0, vertex_buffer_memory_requirements.size, 0, &data);
-    memcpy(data, vertex_positions.data(), vertex_buffer_memory_requirements.size);
-    vkUnmapMemory(device, mesh_vertex_buffer_memory);
-  }
+      }
 
   void Engine::create_command_pool()
   {
@@ -433,27 +415,6 @@ namespace Prism
     create_info.code = spirv_code;
 
     return _device->create_shader_module(create_info);
-  }
-
-  uint32_t Engine::find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties) const
-  {
-    assert(physical_device);
-
-    VkPhysicalDeviceMemoryProperties physical_device_constraint;
-
-    vkGetPhysicalDeviceMemoryProperties(physical_device, &physical_device_constraint);
-
-    for (uint32_t i = 0; i < physical_device_constraint.memoryTypeCount; ++i)
-    {
-      if ((type_filter & (1 << i)) && // Is memory type compatible with buffer?
-          (physical_device_constraint.memoryTypes[i].propertyFlags & properties)
-              == properties) // Does memory type have required properties?
-      {
-        return i;
-      }
-    }
-
-    throw std::runtime_error("Failed to find suitable memory type!");
   }
 
   void Engine::create_semaphores()

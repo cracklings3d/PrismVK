@@ -1,6 +1,6 @@
 // Created by cr on 2/23/25.
 
-#include "HAL/Device.h"
+#include <cassert>
 
 #include "HAL/Vulkan/Device.h"
 #include "HAL/Vulkan/Error.h"
@@ -10,13 +10,13 @@
 namespace Prism::HAL::Vulkan
 {
   Physical_device::Physical_device(const VkPhysicalDevice &vk_physical_device)
-      : _vk_physical_device(std::make_shared<VkPhysicalDevice>(vk_physical_device))
+      : _vk_handle(std::make_shared<VkPhysicalDevice>(vk_physical_device))
   {}
 
   Physical_device_properties Physical_device::get_device_properties() const
   {
     VkPhysicalDeviceProperties vk_physical_device_properties;
-    vkGetPhysicalDeviceProperties(*_vk_physical_device, &vk_physical_device_properties);
+    vkGetPhysicalDeviceProperties(*_vk_handle, &vk_physical_device_properties);
     return convert(vk_physical_device_properties);
   }
 
@@ -25,12 +25,12 @@ namespace Prism::HAL::Vulkan
     VkDeviceCreateInfo vk_device_create_info = convert(device_create_info);
 
     VkDevice vk_device;
-    VkResult result = vkCreateDevice(*_vk_physical_device, &vk_device_create_info, nullptr, &vk_device);
+    VkResult result = vkCreateDevice(*_vk_handle, &vk_device_create_info, nullptr, &vk_device);
 
     check_result(result, "Create_device");
 
-    return std::make_unique<Device>(vk_device);
+    return std::make_unique<Device>(vk_device, _vk_handle.get());
   }
 
-  VkPhysicalDevice *Physical_device::get_vk_physical_device() const { return _vk_physical_device.get(); }
+  
 } // namespace Prism::HAL::Vulkan

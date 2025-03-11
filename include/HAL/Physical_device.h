@@ -35,7 +35,7 @@ namespace Prism::HAL
   public:
     virtual ~Physical_device() = default;
 
-    [[nodiscard]] virtual Physical_device_properties get_device_properties() const                               = 0;
-    [[nodiscard]] virtual std::unique_ptr<Device>    create_device(const Device_create_info &device_create_info) = 0;
+    [[nodiscard]] virtual Physical_device_properties get_device_properties() const                                = 0;
+    [[nodiscard]] virtual std::unique_ptr<Device>    create_device(const Device_create_info &device_create_info)  = 0;
   };
 } // namespace Prism::HAL

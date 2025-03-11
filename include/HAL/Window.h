@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "HAL.h"
+#include "Viewport.h"
 
 namespace Prism::HAL
 {
@@ -27,9 +28,10 @@ namespace Prism::HAL
     virtual bool should_close() = 0;
     virtual void poll_event()   = 0;
 
-    virtual std::vector<const char *> get_required_extensions() const = 0;
+    [[nodiscard]] virtual Extent2D get_extent() const = 0;
 
-    virtual std::unique_ptr<Surface> create_surface(Instance &instance) = 0;
+    [[nodiscard]] virtual std::vector<const char *> get_required_extensions() const    = 0;
+    [[nodiscard]] virtual std::unique_ptr<Surface>  create_surface(Instance *instance) = 0;
   };
 
   std::unique_ptr<Window> create_window(const Render_api &render_api);

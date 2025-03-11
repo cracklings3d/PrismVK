@@ -3,14 +3,14 @@
 #pragma once
 
 #define SDL_MAIN_HANDLED
+#include <SDL2/SDL_video.h>
 #include <string>
 #include <vector>
-#include <SDL2/SDL_video.h>
 
-#include "Surface.h"
-#include "../HAL.h"
-#include "../Window.h"
-
+#include "HAL/HAL.h"
+#include "HAL/Surface.h"
+#include "HAL/Viewport.h"
+#include "HAL/Window.h"
 
 namespace Prism::HAL::Vulkan
 {
@@ -26,11 +26,10 @@ namespace Prism::HAL::Vulkan
     ~Sdl2_manager();
   };
 
-
   class Window_Sdl2 final : public Window
   {
   public:
-    Window_Sdl2();
+    Window_Sdl2(Extent2D extent = {800, 600});
     ~Window_Sdl2() override;
 
     void request_close() override;
@@ -43,16 +42,18 @@ namespace Prism::HAL::Vulkan
     bool should_close() override;
     void poll_event() override;
 
+    Extent2D get_extent() const override;
+
     std::vector<const char *>     get_required_extensions() const override;
-    std::unique_ptr<HAL::Surface> create_surface(HAL::Instance &instance) override;
+    std::unique_ptr<HAL::Surface> create_surface(HAL::Instance *instance) override;
 
   private:
-    SDL_Window *_window = nullptr;
-
-    Instance *_instance = nullptr;
-
-    bool _should_close = false;
-
     Sdl2_manager &_sdl2_manager = Sdl2_manager::get();
+    SDL_Window   *_window       = nullptr;
+    Instance     *_instance     = nullptr;
+    Surface      *_surface      = nullptr;
+
+    Extent2D _extent;
+    bool     _should_close = false;
   };
-} // Prism::HAL::Vulkan
+} // namespace Prism::HAL::Vulkan
