@@ -1,7 +1,12 @@
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Mar 05 2025       *
+ *****************************/
+
 #pragma once
 
-#include "HAL/Pipeline.h"
 #include "HAL/Shader.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Prism::HAL::Vulkan

@@ -1,4 +1,10 @@
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Mar 09 2025       *
+ *****************************/
+
 #include "HAL/Vulkan/Viewport.h"
+
 #include <stdexcept>
 
 namespace Prism::HAL::Vulkan

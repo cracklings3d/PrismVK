@@ -1,3 +1,8 @@
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Mar 04 2025       *
+ *****************************/
+
 #pragma once
 
 #include <cstdint>
@@ -10,6 +15,8 @@
 namespace Prism::HAL
 {
   class Surface;
+  class Semaphore;
+  class Fence;
   class Image;
   class Image_view;
   class Image_view_create_info;
@@ -38,6 +45,7 @@ namespace Prism::HAL
     [[nodiscard]] virtual std::vector<Image_view> create_image_views(
         const Image_view_create_info &create_info, const std::vector<std::unique_ptr<Image>> &images) const
         = 0;
+    [[nodiscard]] virtual uint32_t acquire_next_image(Semaphore *semaphore, uint64_t timeout, Fence *fence) const = 0;
   };
 
   struct Swapchain_create_info

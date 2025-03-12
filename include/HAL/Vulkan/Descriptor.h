@@ -29,7 +29,6 @@ namespace Prism::HAL::Vulkan
     std::unique_ptr<VkDescriptorSetLayout> _vk_handle;
   };
 
-  VkDescriptorType                convert(const HAL::Descriptor_type &descriptor_type);
-  VkDescriptorSetLayoutBinding    convert(const HAL::Descriptor_set_layout_binding &binding);
   VkDescriptorSetLayoutCreateInfo convert(const HAL::Descriptor_set_layout_create_info &create_info);
+  VkDescriptorSetLayoutBinding    convert(const HAL::Descriptor_set_layout_binding &binding);
 } // namespace Prism::HAL::Vulkan

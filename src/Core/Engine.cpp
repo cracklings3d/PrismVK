@@ -26,6 +26,7 @@
 #include "HAL/Render_pass.h"
 #include "HAL/Shader.h"
 #include "HAL/Swapchain.h"
+#include "HAL/Sync.h"
 #include "HAL/Viewport.h"
 #include "HAL/Window.h"
 
@@ -280,8 +281,8 @@ namespace Prism
   {
     HAL::Command_buffer_allocate_info command_buffer_allocate_info;
 
-    command_buffer_allocate_info.command_buffer_count = _swapchain_image_views.size();
-    command_buffer_allocate_info.level                = HAL::Command_buffer_level::Primary;
+    command_buffer_allocate_info.count = _swapchain_image_views.size();
+    command_buffer_allocate_info.level = HAL::Command_buffer_level::Primary;
 
     _command_buffers = _command_pool->allocate_command_buffers(command_buffer_allocate_info);
   }
@@ -309,25 +310,24 @@ namespace Prism
 
   void Engine::present_frame_buffer()
   {
-    VkPresentInfoKHR present_info   = {};
-    present_info.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    present_info.waitSemaphoreCount = 1;
-    present_info.pWaitSemaphores    = get_render_finished_semaphore();
-    present_info.swapchainCount     = 1;
-    present_info.pSwapchains        = &swap_chain;
-    present_info.pImageIndices      = &swap_chain_index;
+    HAL::Present_info present_info;
 
-    vkQueuePresentKHR(graphic_queue, &present_info);
+    present_info.wait_semaphores = {get_render_finished_semaphore()};
+    present_info.swapchains      = {_swapchain.get()};
+    present_info.image_indices   = {swapchain_index};
+
+    _queue->present(present_info);
   }
 
   void Engine::request_frame_buffer()
   {
-    vkWaitForFences(device, 1, get_current_command_buffer_fence(), VK_TRUE, UINT64_MAX);
-    vkResetFences(device, 1, get_current_command_buffer_fence());
+    HAL::Fence *current_command_buffer_fence = get_current_command_buffer_fence();
 
-    vkAcquireNextImageKHR(
-        device, swap_chain, UINT64_MAX, *(image_available_semaphores.data() + semaphore_index), VK_NULL_HANDLE,
-        &swap_chain_index);
+    current_command_buffer_fence->wait(UINT64_MAX);
+    current_command_buffer_fence->reset();
+
+    swapchain_index = _swapchain->acquire_next_image(
+        get_image_available_semaphore(), UINT64_MAX, get_previous_command_buffer_fence());
   }
 
   void Engine::initialize()
@@ -358,7 +358,7 @@ namespace Prism
 
       handle_input_events();
       request_frame_buffer();
-      record_command_buffer(command_buffers[swap_chain_index], swap_chain_frame_buffers[swap_chain_index]);
+      record_command_buffer(command_buffers[swapchain_index], swap_chain_frame_buffers[swapchain_index]);
       submit_command_buffer();
       present_frame_buffer();
 
@@ -390,42 +390,29 @@ namespace Prism
 
   void Engine::create_semaphores()
   {
-    image_available_semaphores.resize(swap_chain_size);
-    render_finished_semaphores.resize(swap_chain_size);
+    HAL::Semaphore_create_info semaphore_create_info;
+
+    _image_available_semaphores.resize(swap_chain_size);
+    _render_finished_semaphores.resize(swap_chain_size);
+
     for (size_t i = 0; i < swap_chain_size; i++)
     {
-      VkSemaphoreCreateInfo semaphore_info = {};
-
-      semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-      assert(
-          vkCreateSemaphore(device, &semaphore_info, nullptr, &image_available_semaphores[i]) == VK_SUCCESS
-          && "failed to create semaphores!");
-      assert(
-          vkCreateSemaphore(device, &semaphore_info, nullptr, &render_finished_semaphores[i]) == VK_SUCCESS
-          && "failed to create semaphores!");
+      _image_available_semaphores[i] = _device->create_semaphore(semaphore_create_info);
+      _render_finished_semaphores[i] = _device->create_semaphore(semaphore_create_info);
     }
   }
 
   void Engine::create_fences()
   {
-    image_available_semaphores.resize(swap_chain_size);
-    render_finished_semaphores.resize(swap_chain_size);
-    command_buffer_fences.resize(swap_chain_size);
+    _command_buffer_fences.resize(swap_chain_size);
 
-    VkFenceCreateInfo fence_info = {};
+    HAL::Fence_create_info fence_create_info;
 
-    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    fence_create_info.signaled = true;
 
     for (size_t i = 0; i < swap_chain_size; i++)
     {
-      VkSemaphoreCreateInfo semaphore_info = {};
-      semaphore_info.sType                 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-      assert(vkCreateSemaphore(device, &semaphore_info, nullptr, &image_available_semaphores[i]) == VK_SUCCESS);
-      assert(vkCreateSemaphore(device, &semaphore_info, nullptr, &render_finished_semaphores[i]) == VK_SUCCESS);
-      assert(vkCreateFence(device, &fence_info, nullptr, &command_buffer_fences[i]) == VK_SUCCESS);
+      _command_buffer_fences[i] = _device->create_fence(fence_create_info);
     }
   }
 
@@ -440,48 +427,44 @@ namespace Prism
 
   void Engine::submit_command_buffer()
   {
-    VkSubmitInfo submitInfo           = {};
-    submitInfo.sType                  = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
-    submitInfo.waitSemaphoreCount     = 1;
-    submitInfo.pWaitSemaphores        = get_image_available_semaphore();
-    submitInfo.pWaitDstStageMask      = waitStages;
-    submitInfo.commandBufferCount     = 1;
-    submitInfo.pCommandBuffers        = &command_buffers[swap_chain_index];
-    submitInfo.signalSemaphoreCount   = 1;
-    submitInfo.pSignalSemaphores      = get_render_finished_semaphore();
+    HAL::Submit_info submit_info;
 
-    if (vkQueueSubmit(graphic_queue, 1, &submitInfo, *get_current_command_buffer_fence()) != VK_SUCCESS)
-    {
-      throw std::runtime_error("failed to submit draw command buffer!");
-    }
+    submit_info.command_buffers   = {get_current_command_buffer()};
+    submit_info.wait_semaphores   = {get_image_available_semaphore()};
+    submit_info.signal_semaphores = {get_render_finished_semaphore()};
+    submit_info.wait_stages       = {HAL::Pipeline_stage::Top_of_pipe};
+
+    _queue->submit({submit_info}, get_current_command_buffer_fence());
   }
 
-  VkFramebuffer Engine::get_current_frame_buffer() const
+  HAL::Framebuffer *Engine::get_current_frame_buffer() const
   {
-    return swap_chain_frame_buffers[frame_index % swap_chain_size];
+    return _framebuffers[frame_index % swap_chain_size].get();
   }
 
-  VkCommandBuffer Engine::get_current_command_buffer() const { return command_buffers[frame_index % swap_chain_size]; }
-
-  const VkFence *Engine::get_previous_command_buffer_fence() const
+  HAL::Command_buffer *Engine::get_current_command_buffer() const
   {
-    return command_buffer_fences.data() + (frame_index + 2) % swap_chain_size;
+    return _command_buffers[frame_index % swap_chain_size].get();
   }
 
-  const VkFence *Engine::get_current_command_buffer_fence() const
+  HAL::Fence *Engine::get_previous_command_buffer_fence() const
   {
-    return command_buffer_fences.data() + frame_index % swap_chain_size;
+    return _command_buffer_fences[(frame_index + 2) % swap_chain_size].get();
   }
 
-  const VkSemaphore *Engine::get_image_available_semaphore() const
+  HAL::Fence *Engine::get_current_command_buffer_fence() const
   {
-    return image_available_semaphores.data() + semaphore_index;
+    return _command_buffer_fences[frame_index % swap_chain_size].get();
   }
 
-  const VkSemaphore *Engine::get_render_finished_semaphore() const
+  HAL::Semaphore *Engine::get_image_available_semaphore() const
   {
-    return render_finished_semaphores.data() + semaphore_index;
+    return _image_available_semaphores[semaphore_index].get();
+  }
+
+  HAL::Semaphore *Engine::get_render_finished_semaphore() const
+  {
+    return _render_finished_semaphores[semaphore_index].get();
   }
 
   void Engine::record_command_buffer(VkCommandBuffer command_buffer, VkFramebuffer frame_buffer) const

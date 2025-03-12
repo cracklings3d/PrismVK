@@ -4,6 +4,9 @@
  *****************************/
 
 #include "HAL/Vulkan/Buffer.h"
+
+#include "HAL/Vulkan/Common.h"
+
 #include <cstring>
 
 namespace Prism::HAL::Vulkan
@@ -67,8 +70,8 @@ namespace Prism::HAL::Vulkan
     VkBufferCreateInfo vk_create_info{};
     vk_create_info.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     vk_create_info.size        = create_info.size;
-    vk_create_info.usage       = convert(create_info.usage);
-    vk_create_info.sharingMode = convert(create_info.sharing_mode);
+    vk_create_info.usage       = convert_enum<VkBufferUsageFlags>(create_info.usage);
+    vk_create_info.sharingMode = convert_enum<VkSharingMode>(create_info.sharing_mode);
     return vk_create_info;
   }
 
@@ -80,31 +83,5 @@ namespace Prism::HAL::Vulkan
     vk_create_info.offset = create_info.offset;
     vk_create_info.range  = create_info.range;
     return vk_create_info;
-  }
-
-  VkBufferUsageFlags convert(const HAL::Buffer_usage usage)
-  {
-    switch (usage)
-    {
-    case HAL::Buffer_usage::Vertex_buffer:
-      return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    case HAL::Buffer_usage::Index_buffer:
-      return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    default:
-      throw std::runtime_error("Unsupported buffer usage");
-    }
-  }
-
-  VkMemoryPropertyFlags convert(const HAL::Memory_property property)
-  {
-    switch (property)
-    {
-    case HAL::Memory_property::Host_visible:
-      return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-    case HAL::Memory_property::Host_coherent:
-      return VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    default:
-      throw std::runtime_error("Unsupported memory property");
-    }
   }
 } // namespace Prism::HAL::Vulkan

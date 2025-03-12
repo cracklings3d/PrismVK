@@ -42,6 +42,4 @@ namespace Prism::HAL::Vulkan
 
   VkBufferCreateInfo     convert(const HAL::Buffer_create_info &create_info);
   VkBufferViewCreateInfo convert(const HAL::Buffer_view_create_info &create_info);
-  VkBufferUsageFlags     convert(const HAL::Buffer_usage usage);
-  VkMemoryPropertyFlags  convert(const HAL::Memory_property property);
 } // namespace Prism::HAL::Vulkan

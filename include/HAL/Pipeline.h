@@ -29,7 +29,7 @@ namespace Prism::HAL
   enum class Vertex_input_rate : uint32_t
   {
     Vertex,
-    Instance
+    Instance,
   };
 
   /**
@@ -111,6 +111,36 @@ namespace Prism::HAL
     Count_4,
     Count_8,
     Count_16,
+  };
+
+  enum class Pipeline_stage : uint32_t
+  {
+    Top_of_pipe                      = 0x00000001,
+    Draw_indirect                    = 0x00000002,
+    Vertex_input                     = 0x00000004,
+    Vertex_shader                    = 0x00000008,
+    Tessellation_control_shader      = 0x00000010,
+    Tessellation_evaluation_shader   = 0x00000020,
+    Geometry_shader                  = 0x00000040,
+    Fragment_shader                  = 0x00000080,
+    Early_fragment_tests             = 0x00000100,
+    Late_fragment_tests              = 0x00000200,
+    Color_attachment_output          = 0x00000400,
+    Compute_shader                   = 0x00000800,
+    Transfer                         = 0x00001000,
+    Bottom_of_pipe                   = 0x00002000,
+    Host                             = 0x00004000,
+    All_graphics                     = 0x00008000,
+    All_commands                     = 0x00010000,
+    Transform_feedback               = 0x01000000,
+    Conditional_rendering            = 0x00040000,
+    Acceleration_structure_build     = 0x02000000,
+    Ray_tracing_shader               = 0x00200000,
+    Fragment_density_process         = 0x00800000,
+    Fragment_shading_rate_attachment = 0x00400000,
+    Mesh_shader                      = 0x00100000,
+    Task_shader                      = 0x00080000,
+    Command_preprocess               = 0x00020000,
   };
 
   /**

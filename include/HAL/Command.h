@@ -10,6 +10,10 @@
 
 namespace Prism::HAL
 {
+  class Command_buffer;
+  class Semaphore;
+  enum class Pipeline_stage : uint32_t;
+
   enum class Command_pool_create_flags
   {
     None                 = 0,
@@ -31,7 +35,7 @@ namespace Prism::HAL
 
   struct Command_buffer_allocate_info
   {
-    uint32_t             command_buffer_count;
+    uint32_t             count;
     Command_buffer_level level;
   };
 
@@ -52,4 +56,6 @@ namespace Prism::HAL
     virtual std::vector<std::unique_ptr<Command_buffer>>
     allocate_command_buffers(const Command_buffer_allocate_info &allocate_info) = 0;
   };
+
+
 } // namespace Prism::HAL

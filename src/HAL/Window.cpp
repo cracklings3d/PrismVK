@@ -1,4 +1,7 @@
-// Created by cr on 2/21/25.
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Feb 21 2025       *
+ *****************************/
 
 #include "HAL/Window.h"
 #include "HAL/Vulkan/Window_Sdl2.h"

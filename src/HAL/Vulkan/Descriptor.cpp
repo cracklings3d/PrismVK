@@ -4,8 +4,9 @@
  *****************************/
 
 #include "HAL/Vulkan/Descriptor.h"
+
+#include "HAL/Vulkan/Common.h"
 #include "HAL/Vulkan/Error.h"
-#include "HAL/Vulkan/Param_converters.h"
 #include "HAL/Vulkan/Shader.h"
 
 #include <algorithm>
@@ -24,50 +25,6 @@ namespace Prism::HAL::Vulkan
     }
   }
 
-  VkDescriptorType convert(const HAL::Descriptor_type &descriptor_type)
-  {
-    switch (descriptor_type)
-    {
-    case Descriptor_type::Sampler:
-      return VK_DESCRIPTOR_TYPE_SAMPLER;
-    case Descriptor_type::Combined_image_sampler:
-      return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    case Descriptor_type::Sampled_image:
-      return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    case Descriptor_type::Storage_image:
-      return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-    case Descriptor_type::Uniform_texel_buffer:
-      return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-    case Descriptor_type::Storage_texel_buffer:
-      return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-    case Descriptor_type::Uniform_buffer:
-      return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    case Descriptor_type::Storage_buffer:
-      return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    case Descriptor_type::Uniform_buffer_dynamic:
-      return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-    case Descriptor_type::Storage_buffer_dynamic:
-      return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-    case Descriptor_type::Input_attachment:
-      return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-    default:
-      throw std::runtime_error("Unsupported descriptor type");
-    }
-  }
-
-  VkDescriptorSetLayoutBinding convert(const HAL::Descriptor_set_layout_binding &binding)
-  {
-    VkDescriptorSetLayoutBinding result;
-
-    result.binding            = binding.binding;
-    result.descriptorType     = convert(binding.descriptor_type);
-    result.descriptorCount    = binding.descriptor_count;
-    result.stageFlags         = convert(binding.stage_flags);
-    result.pImmutableSamplers = nullptr;
-
-    return result;
-  }
-
   VkDescriptorSetLayoutCreateInfo convert(const HAL::Descriptor_set_layout_create_info &create_info)
   {
     VkDescriptorSetLayoutCreateInfo result;
@@ -84,6 +41,19 @@ namespace Prism::HAL::Vulkan
     result.flags        = 0;
     result.bindingCount = bindings.size();
     result.pBindings    = bindings.data();
+
+    return result;
+  }
+
+  VkDescriptorSetLayoutBinding convert(const HAL::Descriptor_set_layout_binding &binding)
+  {
+    VkDescriptorSetLayoutBinding result;
+
+    result.binding            = binding.binding;
+    result.descriptorType     = convert_enum<VkDescriptorType>(binding.descriptor_type);
+    result.descriptorCount    = binding.descriptor_count;
+    result.stageFlags         = convert_enum<VkShaderStageFlags>(binding.stage_flags);
+    result.pImmutableSamplers = nullptr;
 
     return result;
   }

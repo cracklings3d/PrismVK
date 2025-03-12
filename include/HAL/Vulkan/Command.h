@@ -1,6 +1,6 @@
 /*****************************
  * Copyright 2025 Cracklings *
- * Created Mar 04 2025       *
+ * Created Mar 11 2025       *
  *****************************/
 
 #pragma once
@@ -43,8 +43,8 @@ namespace Prism::HAL::Vulkan
     VkDevice                      *_vk_device;
   };
 
-  VkCommandBufferLevel        convert(const HAL::Command_buffer_level level);
-  VkCommandPoolCreateInfo     convert(const HAL::Command_pool_create_info &create_info);
-  VkCommandBufferAllocateInfo convert(const HAL::Command_buffer_allocate_info &allocate_info, VkCommandPool pool);
-  VkCommandPoolCreateFlags    convert(const HAL::Command_pool_create_flags flags);
+  const VkCommandBufferLevel        convert(const HAL::Command_buffer_level level);
+  const VkCommandPoolCreateInfo     convert(const HAL::Command_pool_create_info &create_info);
+  const VkCommandBufferAllocateInfo convert(const HAL::Command_buffer_allocate_info &allocate_info, VkCommandPool pool);
+  const VkCommandPoolCreateFlags    convert(const HAL::Command_pool_create_flags flags);
 } // namespace Prism::HAL::Vulkan

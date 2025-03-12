@@ -6,23 +6,23 @@
 #pragma once
 
 #include "HAL/Framebuffer.h"
-#include <vulkan/vulkan.h>
 #include <memory>
+#include <vulkan/vulkan.h>
 
 namespace Prism::HAL::Vulkan
 {
   class Framebuffer : public HAL::Framebuffer
   {
   public:
-    explicit Framebuffer(VkFramebuffer framebuffer, VkDevice* device);
+    explicit Framebuffer(VkFramebuffer framebuffer, VkDevice *device);
     ~Framebuffer() override;
 
-    [[nodiscard]] VkFramebuffer* get_vk_handle() const { return _vk_handle.get(); }
+    [[nodiscard]] VkFramebuffer *get_vk_handle() const { return _vk_handle.get(); }
 
   private:
     std::unique_ptr<VkFramebuffer> _vk_handle;
-    VkDevice* _vk_device;
+    VkDevice                      *_vk_device;
   };
 
-  VkFramebufferCreateInfo convert(const HAL::Framebuffer_create_info& create_info);
-} 
+  VkFramebufferCreateInfo convert(const HAL::Framebuffer_create_info &create_info);
+} // namespace Prism::HAL::Vulkan

@@ -4,9 +4,10 @@
  *****************************/
 
 #include "HAL/Vulkan/Instance.h"
+
 #include "HAL/Vulkan/Error.h"
-#include "HAL/Vulkan/Param_converters.h"
 #include "HAL/Vulkan/Physical_device.h"
+
 #include <memory>
 
 namespace Prism::HAL::Vulkan
@@ -18,8 +19,6 @@ namespace Prism::HAL::Vulkan
     vkDestroyInstance(*_vk_handle, nullptr);
     _vk_handle.reset();
   }
-
-  VkInstance *Instance::get_vk_handle() const { return _vk_handle.get(); }
 
   std::shared_ptr<HAL::Physical_device> Instance::select_discrete_gpu() const
   {

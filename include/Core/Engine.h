@@ -18,6 +18,7 @@
 #include "HAL/Shader.h"
 #include "HAL/Surface.h"
 #include "HAL/Swapchain.h"
+#include "HAL/Sync.h"
 #include "HAL/Window.h"
 
 namespace Prism
@@ -59,13 +60,13 @@ namespace Prism
     void present_frame_buffer();
 
 
-    [[nodiscard]] VkFramebuffer   get_current_frame_buffer() const;
-    [[nodiscard]] VkCommandBuffer get_current_command_buffer() const;
-    [[nodiscard]] const VkFence  *get_previous_command_buffer_fence() const;
-    [[nodiscard]] const VkFence  *get_current_command_buffer_fence() const;
+    [[nodiscard]] HAL::Framebuffer    *get_current_frame_buffer() const;
+    [[nodiscard]] HAL::Command_buffer *get_current_command_buffer() const;
+    [[nodiscard]] HAL::Fence    *get_previous_command_buffer_fence() const;
+    [[nodiscard]] HAL::Fence    *get_current_command_buffer_fence() const;
 
-    [[nodiscard]] const VkSemaphore *get_image_available_semaphore() const;
-    [[nodiscard]] const VkSemaphore *get_render_finished_semaphore() const;
+    [[nodiscard]] HAL::Semaphore *get_image_available_semaphore() const;
+    [[nodiscard]] HAL::Semaphore *get_render_finished_semaphore() const;
 
   private:
     HAL::Render_api _render_api = HAL::Render_api::Unknown;
@@ -98,6 +99,11 @@ namespace Prism
     std::unique_ptr<HAL::Command_pool>                _command_pool    = nullptr;
     std::vector<std::unique_ptr<HAL::Command_buffer>> _command_buffers = {};
 
+    std::vector<std::unique_ptr<HAL::Semaphore>> _image_available_semaphores = {};
+    std::vector<std::unique_ptr<HAL::Semaphore>> _render_finished_semaphores = {};
+
+    std::vector<std::unique_ptr<HAL::Fence>> _command_buffer_fences = {};
+
   private:
     VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 
@@ -126,7 +132,7 @@ namespace Prism
 
     // volatile (per frame) data
     uint32_t     frame_index      = 0;
-    uint32_t     swap_chain_index = 0;
+    uint32_t     swapchain_index = 0;
     uint32_t     semaphore_index  = 0;
     VkRenderPass render_pass      = nullptr;
 

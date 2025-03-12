@@ -22,6 +22,8 @@ namespace Prism::HAL
   class Buffer;
   class Buffer_view;
   class Command_pool;
+  class Semaphore;
+  class Fence;
 
   struct Swapchain_create_info;
   struct Render_pass_create_info;
@@ -33,6 +35,8 @@ namespace Prism::HAL
   struct Buffer_create_info;
   struct Buffer_view_create_info;
   struct Command_pool_create_info;
+  struct Semaphore_create_info;
+  struct Fence_create_info;
 
   /**
    * @brief Information required to create a command queue
@@ -82,6 +86,12 @@ namespace Prism::HAL
 
     [[nodiscard]] virtual std::unique_ptr<Command_pool>
     create_command_pool(const Command_pool_create_info& create_info) const = 0;
+
+    [[nodiscard]] virtual std::unique_ptr<Semaphore> 
+    create_semaphore(const Semaphore_create_info& create_info) const = 0;
+    
+    [[nodiscard]] virtual std::unique_ptr<Fence>
+    create_fence(const Fence_create_info& create_info) const = 0;
   };
 
 } // namespace Prism::HAL

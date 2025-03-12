@@ -1,6 +1,10 @@
-// Created by cr on 2/23/25.
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Feb 23 2025       *
+ *****************************/
 
 #pragma once
+
 #include <cstdint>
 #include <memory>
 #include <string>

@@ -1,4 +1,10 @@
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Mar 05 2025       *
+ *****************************/
+
 #include "HAL/Vulkan/Shader.h"
+
 #include "HAL/Vulkan/Error.h"
 
 namespace Prism::HAL::Vulkan

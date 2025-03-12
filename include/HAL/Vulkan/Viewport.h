@@ -1,5 +1,12 @@
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Mar 09 2025       *
+ *****************************/
+
 #pragma once
+
 #include "HAL/Viewport.h"
+
 #include <memory>
 #include <vulkan/vulkan.h>
 

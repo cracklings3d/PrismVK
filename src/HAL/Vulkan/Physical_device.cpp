@@ -1,11 +1,14 @@
-// Created by cr on 2/23/25.
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Feb 23 2025       *
+ *****************************/
 
-#include <cassert>
+#include "HAL/Vulkan/Physical_device.h"
 
 #include "HAL/Vulkan/Device.h"
 #include "HAL/Vulkan/Error.h"
-#include "HAL/Vulkan/Param_converters.h"
-#include "HAL/Vulkan/Physical_device.h"
+
+#include <cassert>
 
 namespace Prism::HAL::Vulkan
 {
@@ -13,6 +16,7 @@ namespace Prism::HAL::Vulkan
       : _vk_handle(std::make_shared<VkPhysicalDevice>(vk_physical_device))
   {}
 
+  // Consider a top-down requirement approach instead of parsing and presenting the properties
   Physical_device_properties Physical_device::get_device_properties() const
   {
     VkPhysicalDeviceProperties vk_physical_device_properties;
@@ -32,5 +36,17 @@ namespace Prism::HAL::Vulkan
     return std::make_unique<Device>(vk_device, _vk_handle.get());
   }
 
-  
+  Physical_device_properties convert(const VkPhysicalDeviceProperties &vk)
+  {
+    Physical_device_properties hal{};
+
+    hal.api_version    = vk.apiVersion;
+    hal.driver_version = vk.driverVersion;
+    hal.vendor_id      = vk.vendorID;
+    hal.device_id      = vk.deviceID;
+    hal.device_type    = vk.deviceType;
+    hal.device_name    = vk.deviceName;
+
+    return hal;
+  }
 } // namespace Prism::HAL::Vulkan

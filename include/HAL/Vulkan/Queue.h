@@ -1,6 +1,13 @@
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Mar 04 2025       *
+ *****************************/
+
 #pragma once
 
-#include "../Queue.h"
+#include "HAL/Command.h"
+#include "HAL/Queue.h"
+
 #include <memory>
 #include <vulkan/vulkan_core.h>
 
@@ -15,7 +22,12 @@ namespace Prism::HAL::Vulkan
 
     [[nodiscard]] VkQueue *get_vk_queue() const;
 
+    void present(const HAL::Present_info &present_info) override;
+    void submit(const std::vector<HAL::Submit_info> &submit_info, HAL::Fence *fence) override;
+
   private:
     std::unique_ptr<VkQueue> _vk_queue;
   };
+
+  const VkSubmitInfo convert(const HAL::Submit_info &submit_info);
 } // namespace Prism::HAL::Vulkan

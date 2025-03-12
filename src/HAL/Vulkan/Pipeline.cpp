@@ -3,114 +3,26 @@
  * Created Mar 04 2025       *
  *****************************/
 
-#include <vector>
-
-#include "HAL/Vulkan/Descriptor.h"
-#include "HAL/Vulkan/Param_converters.h"
 #include "HAL/Vulkan/Pipeline.h"
+
+#include "HAL/Vulkan/Common.h"
+#include "HAL/Vulkan/Descriptor.h"
 #include "HAL/Vulkan/Render_pass.h"
 #include "HAL/Vulkan/Shader.h"
 #include "HAL/Vulkan/Viewport.h"
 
+#include <vector>
+
 namespace Prism::HAL::Vulkan
 {
-  VkBlendFactor convert(const HAL::Blend_factor &factor)
+  Color_component operator|(Color_component a, Color_component b)
   {
-    switch (factor)
-    {
-    case HAL::Blend_factor::Zero:
-      return VK_BLEND_FACTOR_ZERO;
-    case HAL::Blend_factor::One:
-      return VK_BLEND_FACTOR_ONE;
-    case HAL::Blend_factor::Src_color:
-      return VK_BLEND_FACTOR_SRC_COLOR;
-    case HAL::Blend_factor::One_minus_src_color:
-      return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-    case HAL::Blend_factor::Dst_color:
-      return VK_BLEND_FACTOR_DST_COLOR;
-    case HAL::Blend_factor::One_minus_dst_color:
-      return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-    case HAL::Blend_factor::Src_alpha:
-      return VK_BLEND_FACTOR_SRC_ALPHA;
-    case HAL::Blend_factor::One_minus_src_alpha:
-      return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    case HAL::Blend_factor::Dst_alpha:
-      return VK_BLEND_FACTOR_DST_ALPHA;
-    case HAL::Blend_factor::One_minus_dst_alpha:
-      return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
-    case HAL::Blend_factor::Constant_color:
-      return VK_BLEND_FACTOR_CONSTANT_COLOR;
-    case HAL::Blend_factor::One_minus_constant_color:
-      return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
-    case HAL::Blend_factor::Constant_alpha:
-      return VK_BLEND_FACTOR_CONSTANT_ALPHA;
-    case HAL::Blend_factor::One_minus_constant_alpha:
-      return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
-    default:
-      throw std::runtime_error("Unsupported blend factor");
-    }
-  }
-
-  VkBlendOp convert(const HAL::Blend_op &op)
-  {
-    switch (op)
-    {
-    case HAL::Blend_op::Add:
-      return VK_BLEND_OP_ADD;
-    case HAL::Blend_op::Subtract:
-      return VK_BLEND_OP_SUBTRACT;
-    case HAL::Blend_op::Reverse_subtract:
-      return VK_BLEND_OP_REVERSE_SUBTRACT;
-    case HAL::Blend_op::Min:
-      return VK_BLEND_OP_MIN;
-    case HAL::Blend_op::Max:
-      return VK_BLEND_OP_MAX;
-    default:
-      throw std::runtime_error("Unsupported blend op");
-    }
-  }
-
-  VkColorComponentFlags convert(const HAL::Color_component &component)
-  {
-    switch (component)
-    {
-    case HAL::Color_component::R:
-      return VK_COLOR_COMPONENT_R_BIT;
-    case HAL::Color_component::G:
-      return VK_COLOR_COMPONENT_G_BIT;
-    case HAL::Color_component::B:
-      return VK_COLOR_COMPONENT_B_BIT;
-    case HAL::Color_component::A:
-      return VK_COLOR_COMPONENT_A_BIT;
-    default:
-      throw std::runtime_error("Unsupported color component");
-    }
-  }
-
-  VkPrimitiveTopology convert(const HAL::Primitive_topology &topology)
-  {
-    switch (topology)
-    {
-    case HAL::Primitive_topology::Point_list:
-      return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-    case HAL::Primitive_topology::Line_list:
-      return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-    case HAL::Primitive_topology::Line_strip:
-      return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
-    case HAL::Primitive_topology::Triangle_list:
-      return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    case HAL::Primitive_topology::Triangle_strip:
-      return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-    case HAL::Primitive_topology::Triangle_fan:
-      return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
-    default:
-      throw std::runtime_error("Unsupported primitive topology");
-    }
+    return static_cast<Color_component>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
   }
 
   VkPushConstantRange convert(const HAL::Push_constant_range &info)
   {
-    VkPushConstantRange vk_info{};
+    VkPushConstantRange vk_info;
 
     vk_info.stageFlags = convert(info.stage_flags);
     vk_info.offset     = info.offset;
@@ -125,7 +37,7 @@ namespace Prism::HAL::Vulkan
 
     vk_info.binding   = info.binding;
     vk_info.stride    = info.stride;
-    vk_info.inputRate = convert(info.input_rate);
+    vk_info.inputRate = convert_enum<VkVertexInputRate>(info.input_rate);
 
     return vk_info;
   }
@@ -136,7 +48,7 @@ namespace Prism::HAL::Vulkan
 
     vk_info.location = info.location;
     vk_info.binding  = info.binding;
-    vk_info.format   = convert(info.format);
+    vk_info.format   = convert_enum<VkFormat>(info.format);
     vk_info.offset   = info.offset;
 
     return vk_info;
@@ -168,11 +80,11 @@ namespace Prism::HAL::Vulkan
     return vk_info;
   }
 
-  VkPipelineInputAssemblyStateCreateInfo convert(const Pipeline_input_assembly_state_create_info &info)
+  VkPipelineInputAssemblyStateCreateInfo convert(const HAL::Pipeline_input_assembly_state_create_info &info)
   {
     VkPipelineInputAssemblyStateCreateInfo vk_info{};
     vk_info.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    vk_info.topology               = convert(info.topology);
+    vk_info.topology               = convert_enum<VkPrimitiveTopology>(info.topology);
     vk_info.primitiveRestartEnable = info.primitive_restart_enable;
     return vk_info;
   }
@@ -206,44 +118,50 @@ namespace Prism::HAL::Vulkan
   VkPipelineRasterizationStateCreateInfo convert(const HAL::Pipeline_rasterization_state_create_info &info)
   {
     VkPipelineRasterizationStateCreateInfo vk_info{};
+
     vk_info.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     vk_info.depthClampEnable        = info.depth_clamp_enable;
     vk_info.rasterizerDiscardEnable = info.rasterizer_discard_enable;
-    vk_info.polygonMode             = convert(info.polygon_mode);
-    vk_info.cullMode                = convert(info.cull_mode);
-    vk_info.frontFace               = convert(info.front_face);
+    vk_info.polygonMode             = convert_enum<VkPolygonMode>(info.polygon_mode);
+    vk_info.cullMode                = convert_enum<VkCullModeFlags>(info.cull_mode);
+    vk_info.frontFace               = convert_enum<VkFrontFace>(info.front_face);
     vk_info.depthBiasEnable         = info.depth_bias_enable;
     vk_info.depthBiasConstantFactor = info.depth_bias_constant_factor;
     vk_info.depthBiasClamp          = info.depth_bias_clamp;
     vk_info.depthBiasSlopeFactor    = info.depth_bias_slope_factor;
     vk_info.lineWidth               = info.line_width;
+
     return vk_info;
   }
 
   VkPipelineMultisampleStateCreateInfo convert(const HAL::Pipeline_multisample_state_create_info &info)
   {
     VkPipelineMultisampleStateCreateInfo vk_info{};
+
     vk_info.sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    vk_info.rasterizationSamples  = convert(info.rasterization_samples);
+    vk_info.rasterizationSamples  = convert_enum<VkSampleCountFlagBits>(info.rasterization_samples);
     vk_info.sampleShadingEnable   = info.sample_shading_enable;
     vk_info.minSampleShading      = info.min_sample_shading;
     vk_info.pSampleMask           = &info.sample_mask; // Note: might need array conversion if multiple masks
     vk_info.alphaToCoverageEnable = info.alpha_to_coverage_enable;
     vk_info.alphaToOneEnable      = info.alpha_to_one_enable;
+
     return vk_info;
   }
 
   VkPipelineColorBlendAttachmentState convert(const HAL::Pipeline_color_blend_attachment_state &info)
   {
     VkPipelineColorBlendAttachmentState vk_info{};
+
     vk_info.blendEnable         = info.blend_enable;
-    vk_info.srcColorBlendFactor = convert(info.src_color_blend_factor);
-    vk_info.dstColorBlendFactor = convert(info.dst_color_blend_factor);
-    vk_info.colorBlendOp        = convert(info.color_blend_op);
-    vk_info.srcAlphaBlendFactor = convert(info.src_alpha_blend_factor);
-    vk_info.dstAlphaBlendFactor = convert(info.dst_alpha_blend_factor);
-    vk_info.alphaBlendOp        = convert(info.alpha_blend_op);
-    vk_info.colorWriteMask      = convert(info.color_write_mask);
+    vk_info.srcColorBlendFactor = convert_enum<VkBlendFactor>(info.src_color_blend_factor);
+    vk_info.dstColorBlendFactor = convert_enum<VkBlendFactor>(info.dst_color_blend_factor);
+    vk_info.colorBlendOp        = convert_enum<VkBlendOp>(info.color_blend_op);
+    vk_info.srcAlphaBlendFactor = convert_enum<VkBlendFactor>(info.src_alpha_blend_factor);
+    vk_info.dstAlphaBlendFactor = convert_enum<VkBlendFactor>(info.dst_alpha_blend_factor);
+    vk_info.alphaBlendOp        = convert_enum<VkBlendOp>(info.alpha_blend_op);
+    vk_info.colorWriteMask      = convert_enum<VkColorComponentFlags>(info.color_write_mask);
+
     return vk_info;
   }
 
@@ -260,7 +178,7 @@ namespace Prism::HAL::Vulkan
 
     vk_info.sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     vk_info.logicOpEnable   = info.logic_op_enable;
-    vk_info.logicOp         = convert(info.logic_op);
+    vk_info.logicOp         = convert_enum<VkLogicOp>(info.logic_op);
     vk_info.attachmentCount = vk_attachments.size();
     vk_info.pAttachments    = vk_attachments.data();
     std::copy(std::begin(info.blend_constants), std::end(info.blend_constants), vk_info.blendConstants);
@@ -268,19 +186,22 @@ namespace Prism::HAL::Vulkan
     return vk_info;
   }
 
-  VkPipelineShaderStageCreateInfo convert(const Pipeline_shader_stage_create_info &info)
+  VkPipelineShaderStageCreateInfo convert(const HAL::Pipeline_shader_stage_create_info &info)
   {
     VkPipelineShaderStageCreateInfo vk_info{};
+
     vk_info.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vk_info.stage  = convert(info.shader_stage);
+    vk_info.stage  = convert_enum<VkShaderStageFlagBits>(info.shader_stage);
     vk_info.module = *static_cast<Vulkan::Shader_module *>(info.module)->get_vk_handle();
     vk_info.pName  = info.entry_point.c_str();
+
     return vk_info;
   }
 
   VkGraphicsPipelineCreateInfo convert(const HAL::Graphics_pipeline_create_info &info)
   {
     VkGraphicsPipelineCreateInfo vk_info{};
+
     vk_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
     // Convert shader stages
@@ -346,11 +267,6 @@ namespace Prism::HAL::Vulkan
     vk_info.pPushConstantRanges    = vk_push_constant_ranges.data();
 
     return vk_info;
-  }
-
-  Color_component operator|(Color_component a, Color_component b)
-  {
-    return static_cast<Color_component>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
   }
 
   Pipeline::~Pipeline()

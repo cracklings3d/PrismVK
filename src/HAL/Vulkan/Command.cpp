@@ -1,6 +1,6 @@
 /*****************************
  * Copyright 2025 Cracklings *
- * Created Mar 04 2025       *
+ * Created Mar 11 2025       *
  *****************************/
 
 #include "HAL/Vulkan/Command.h"
@@ -45,7 +45,7 @@ namespace Prism::HAL::Vulkan
   Command_pool::allocate_command_buffers(const HAL::Command_buffer_allocate_info &allocate_info)
   {
     VkCommandBufferAllocateInfo  vk_allocate_info = convert(allocate_info, *_vk_handle);
-    std::vector<VkCommandBuffer> command_buffers(allocate_info.command_buffer_count);
+    std::vector<VkCommandBuffer> command_buffers(allocate_info.count);
 
     VkResult result = vkAllocateCommandBuffers(*_vk_device, &vk_allocate_info, command_buffers.data());
     check_result(result, __func__);
@@ -61,20 +61,12 @@ namespace Prism::HAL::Vulkan
     return hal_command_buffers;
   }
 
-  VkCommandBufferLevel convert(const HAL::Command_buffer_level level)
+  const VkCommandBufferLevel convert(const HAL::Command_buffer_level level)
   {
-    switch (level)
-    {
-    case HAL::Command_buffer_level::Primary:
-      return VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    case HAL::Command_buffer_level::Secondary:
-      return VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-    default:
-      throw std::runtime_error("Invalid command buffer level!");
-    }
+    return static_cast<VkCommandBufferLevel>(static_cast<uint32_t>(level));
   }
 
-  VkCommandPoolCreateInfo convert(const HAL::Command_pool_create_info &create_info)
+  const VkCommandPoolCreateInfo convert(const HAL::Command_pool_create_info &create_info)
   {
     VkCommandPoolCreateInfo vk_create_info{};
 
@@ -85,19 +77,19 @@ namespace Prism::HAL::Vulkan
     return vk_create_info;
   }
 
-  VkCommandBufferAllocateInfo convert(const HAL::Command_buffer_allocate_info &allocate_info, VkCommandPool pool)
+  const VkCommandBufferAllocateInfo convert(const HAL::Command_buffer_allocate_info &allocate_info, VkCommandPool pool)
   {
     VkCommandBufferAllocateInfo vk_allocate_info{};
 
     vk_allocate_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     vk_allocate_info.commandPool        = pool;
     vk_allocate_info.level              = convert(allocate_info.level);
-    vk_allocate_info.commandBufferCount = allocate_info.command_buffer_count;
+    vk_allocate_info.commandBufferCount = allocate_info.count;
 
     return vk_allocate_info;
   }
 
-  VkCommandPoolCreateFlags convert(const HAL::Command_pool_create_flags flags)
+  const VkCommandPoolCreateFlags convert(const HAL::Command_pool_create_flags flags)
   {
     VkCommandPoolCreateFlags result = 0;
 

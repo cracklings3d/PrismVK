@@ -1,10 +1,13 @@
-// Created by cr on 2/23/25.
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Feb 23 2025       *
+ *****************************/
 
 #pragma once
 
-#include <vulkan/vulkan_core.h>
+#include "HAL/Physical_device.h"
 
-#include "../Physical_device.h"
+#include <vulkan/vulkan_core.h>
 
 namespace Prism::HAL::Vulkan
 {
@@ -23,4 +26,6 @@ namespace Prism::HAL::Vulkan
   private:
     std::shared_ptr<VkPhysicalDevice> _vk_handle = nullptr;
   };
+
+  Physical_device_properties convert(const VkPhysicalDeviceProperties &vk_physical_device_properties);
 } // namespace Prism::HAL::Vulkan

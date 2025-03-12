@@ -3,22 +3,24 @@
  * Created Feb 26 2025       *
  *****************************/
 
+#include "HAL/Vulkan/Device.h"
+
 #include <cassert>
 #include <memory>
 
 #include "HAL/Vulkan/Buffer.h"
 #include "HAL/Vulkan/Command.h"
+#include "HAL/Vulkan/Common.h"
 #include "HAL/Vulkan/Descriptor.h"
-#include "HAL/Vulkan/Device.h"
 #include "HAL/Vulkan/Error.h"
 #include "HAL/Vulkan/Framebuffer.h"
-#include "HAL/Vulkan/Param_converters.h"
 #include "HAL/Vulkan/Physical_device.h"
 #include "HAL/Vulkan/Pipeline.h"
 #include "HAL/Vulkan/Queue.h"
 #include "HAL/Vulkan/Render_pass.h"
 #include "HAL/Vulkan/Shader.h"
 #include "HAL/Vulkan/Swapchain.h"
+#include "HAL/Vulkan/Sync.h"
 
 namespace Prism::HAL::Vulkan
 {
@@ -194,10 +196,10 @@ namespace Prism::HAL::Vulkan
     vkGetBufferMemoryRequirements(*_vk_handle, vk_buffer, &mem_requirements);
 
     VkMemoryAllocateInfo alloc_info{};
-    alloc_info.sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    alloc_info.allocationSize = mem_requirements.size;
-    alloc_info.memoryTypeIndex
-        = find_memory_type(mem_requirements.memoryTypeBits, convert(create_info.desired_memory_properties));
+    alloc_info.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    alloc_info.allocationSize  = mem_requirements.size;
+    alloc_info.memoryTypeIndex = find_memory_type(
+        mem_requirements.memoryTypeBits, convert_enum<VkMemoryPropertyFlags>(create_info.desired_memory_properties));
 
     VkDeviceMemory vk_memory;
     result = vkAllocateMemory(*_vk_handle, &alloc_info, nullptr, &vk_memory);
@@ -228,5 +230,27 @@ namespace Prism::HAL::Vulkan
     check_result(result, __func__);
 
     return std::make_unique<Vulkan::Command_pool>(std::move(vk_command_pool), _vk_handle.get());
+  }
+
+  std::unique_ptr<HAL::Semaphore> Device::create_semaphore(const HAL::Semaphore_create_info &create_info) const
+  {
+    VkSemaphoreCreateInfo vk_create_info = convert(create_info);
+    VkSemaphore           vk_semaphore;
+
+    VkResult result = vkCreateSemaphore(*_vk_handle, &vk_create_info, nullptr, &vk_semaphore);
+    check_result(result, __func__);
+
+    return std::make_unique<Vulkan::Semaphore>(std::move(vk_semaphore), _vk_handle.get());
+  }
+
+  std::unique_ptr<HAL::Fence> Device::create_fence(const HAL::Fence_create_info &create_info) const
+  {
+    VkFenceCreateInfo vk_create_info = convert(create_info);
+    VkFence           vk_fence;
+
+    VkResult result = vkCreateFence(*_vk_handle, &vk_create_info, nullptr, &vk_fence);
+    check_result(result, __func__);
+
+    return std::make_unique<Vulkan::Fence>(std::move(vk_fence), _vk_handle.get());
   }
 } // namespace Prism::HAL::Vulkan

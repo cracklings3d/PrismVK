@@ -1,4 +1,7 @@
-// Created by cr on 2/22/25.
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Feb 22 2025       *
+ *****************************/
 
 #include "HAL/Vulkan/Surface.h"
 #include "HAL/Vulkan/Instance.h" // Need Vulkan Instance

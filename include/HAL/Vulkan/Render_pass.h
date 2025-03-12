@@ -1,9 +1,14 @@
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Mar 09 2025       *
+ *****************************/
+
 #pragma once
+
+#include "HAL/Render_pass.h"
 
 #include <memory>
 #include <vulkan/vulkan.h>
-
-#include "../Render_pass.h"
 
 namespace Prism::HAL::Vulkan
 {
@@ -22,4 +27,9 @@ namespace Prism::HAL::Vulkan
     std::unique_ptr<VkRenderPass> _vk_handle = nullptr;
     VkDevice                     *_vk_device = nullptr;
   };
+
+  VkAttachmentDescription convert(const HAL::Attachment_description &attachment_description);
+  VkAttachmentReference   convert(const HAL::Attachment_reference &attachment_reference);
+  VkSubpassDescription    convert(const HAL::Subpass_description &subpass_description);
+  VkRenderPassCreateInfo  convert(const HAL::Render_pass_create_info &render_pass_create_info);
 } // namespace Prism::HAL::Vulkan

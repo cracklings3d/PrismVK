@@ -1,10 +1,13 @@
-// Created by cr on 2/22/25.
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Feb 22 2025       *
+ *****************************/
 
 #pragma once
 
-#include <vulkan/vulkan_core.h>
+#include "HAL/Surface.h"
 
-#include "../Surface.h"
+#include <vulkan/vulkan_core.h>
 
 namespace Prism::HAL::Vulkan
 {

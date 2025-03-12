@@ -1,3 +1,8 @@
+/*****************************
+ * Copyright 2025 Cracklings *
+ * Created Mar 01 2025       *
+ *****************************/
+
 #pragma once
 
 #include <string>
