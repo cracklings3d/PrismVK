@@ -5,6 +5,7 @@
 ######## Unignore specific files ########
 # CMake
 !CMakeLists.txt
+!*.cmake
 
 # Source files
 !*.h
