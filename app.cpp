@@ -3,7 +3,11 @@
 
 int main()
 {
-  Prism::Engine engine{Prism::HAL::Render_api::Vulkan};
+  Prism::HAL::Render_settings render_settings;
+
+  render_settings.render_api = Prism::HAL::Render_api::Vulkan;
+
+  Prism::Engine engine{render_settings};
 
   engine.initialize();
 

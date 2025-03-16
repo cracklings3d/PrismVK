@@ -6,15 +6,17 @@
 #include "HAL/Instance.h"
 #include "HAL/HAL.h"
 #include "HAL/Vulkan/Instance.h"
+#include "HAL/Vulkan/Window_Sdl2.h"
 
 namespace Prism::HAL
 {
-  std::unique_ptr<Instance> create_instance(const Instance_create_info &create_info)
+  std::unique_ptr<Instance> create_instance(
+      const Render_api &render_api, Instance_create_info &&create_info, std::vector<const char *> &&window_extensions)
   {
-    switch (Global_config::get().get_render_api())
+    switch (render_api)
     {
     case Render_api::Vulkan:
-      return Vulkan::create_instance(create_info);
+      return Vulkan::create_instance(std::move(create_info), std::move(window_extensions));
     default:
       throw std::runtime_error("Unsupported render API!");
     }

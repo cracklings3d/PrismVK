@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "HAL/HAL.h"
 #include "Util/PCH.h"
 
 class VkInstanceCreateInfo;
@@ -47,10 +48,10 @@ namespace Prism::HAL
     uint32_t application_version = PRISM_VERSION(0, 0, 1);
     uint32_t engine_version      = PRISM_VERSION(0, 0, 1);
 
-    std::string               application_name = "Prism Application";
-    std::string               engine_name      = "Prism Engine";
-    std::vector<const char *> required_extensions;
+    std::string application_name = "Prism Application";
+    std::string engine_name      = "Prism Engine";
   };
 
-  std::unique_ptr<Instance> create_instance(const Instance_create_info &create_info);
+  std::unique_ptr<Instance> create_instance(
+      const Render_api &render_api, Instance_create_info &&create_info, std::vector<const char *> &&window_extensions);
 } // namespace Prism::HAL

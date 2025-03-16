@@ -30,7 +30,10 @@ namespace Prism::HAL::Vulkan
     std::unique_ptr<VkInstance> _vk_handle;
   };
 
-  std::unique_ptr<Instance> create_instance(const HAL::Instance_create_info &instance_create_info);
+  std::unique_ptr<Instance>
+  create_instance(HAL::Instance_create_info &&instance_create_info, std::vector<const char *> &&window_extensions);
 
-  VkInstanceCreateInfo convert(const HAL::Instance_create_info &instance_create_info);
+  std::vector<const char *> get_instance_extensions();
+
+  std::pair<VkInstanceCreateInfo, VkApplicationInfo> convert(HAL::Instance_create_info &&instance_create_info);
 } // namespace Prism::HAL::Vulkan

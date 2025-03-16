@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "HAL/Attachment_description.h"
+#include "HAL/Attachment.h"
 #include "HAL/Buffer.h"
 #include "HAL/Command.h"
 #include "HAL/Device.h"
@@ -43,7 +43,9 @@ namespace Prism
     instance_create_info.application_version = PRISM_VERSION(0, 0, 1);
     instance_create_info.engine_version      = PRISM_VERSION(0, 0, 1);
 
-    _instance = HAL::create_instance(std::move(instance_create_info));
+    auto window_extensions = _window->get_required_extensions();
+    _instance              = HAL::create_instance(
+        _render_settings.render_api, std::move(instance_create_info), std::move(window_extensions));
   }
 
   void Engine::create_surface() { _surface = _window->create_surface(_instance.get()); }
@@ -68,7 +70,7 @@ namespace Prism
   {
     HAL::Device_queue_create_info device_queue_create_info;
     device_queue_create_info.queue_family_index = 0;
-    device_queue_create_info.queue_priorities   = std::make_shared<std::vector<float>>(1.0f);
+    device_queue_create_info.queue_priorities   = {1.0f};
 
     HAL::Device_create_info device_create_info;
     device_create_info.queue_create_infos = {device_queue_create_info};
@@ -332,7 +334,7 @@ namespace Prism
 
   void Engine::initialize()
   {
-    _window = HAL::create_window(_render_api);
+    _window = HAL::create_window(_render_settings.render_api);
     create_instance();
     create_surface();
     select_physical_device();

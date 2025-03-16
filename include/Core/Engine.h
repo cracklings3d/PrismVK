@@ -26,7 +26,7 @@ namespace Prism
   class Engine
   {
   public:
-    explicit Engine(const HAL::Render_api Api) : _render_api(Api) {}
+    explicit Engine(const HAL::Render_settings &render_settings) : _render_settings(render_settings) {}
 
     void initialize();
 
@@ -62,15 +62,14 @@ namespace Prism
 
     [[nodiscard]] HAL::Framebuffer    *get_current_frame_buffer() const;
     [[nodiscard]] HAL::Command_buffer *get_current_command_buffer() const;
-    [[nodiscard]] HAL::Fence    *get_previous_command_buffer_fence() const;
-    [[nodiscard]] HAL::Fence    *get_current_command_buffer_fence() const;
+    [[nodiscard]] HAL::Fence          *get_previous_command_buffer_fence() const;
+    [[nodiscard]] HAL::Fence          *get_current_command_buffer_fence() const;
 
     [[nodiscard]] HAL::Semaphore *get_image_available_semaphore() const;
     [[nodiscard]] HAL::Semaphore *get_render_finished_semaphore() const;
 
   private:
-    HAL::Render_api _render_api = HAL::Render_api::Unknown;
-
+    HAL::Render_settings _render_settings;
 
     std::unique_ptr<HAL::Window>   _window   = nullptr;
     std::unique_ptr<HAL::Instance> _instance = nullptr;
@@ -110,7 +109,6 @@ namespace Prism
     uint32_t swap_chain_size = 0;
 
     // per instance variable
-    float          graphic_queue_priority    = 1.0f;
     VkCommandPool  command_pool              = nullptr;
     VkPipeline     graphics_pipeline         = nullptr;
     VkDeviceMemory mesh_vertex_buffer_memory = nullptr;
@@ -131,10 +129,10 @@ namespace Prism
 
 
     // volatile (per frame) data
-    uint32_t     frame_index      = 0;
+    uint32_t     frame_index     = 0;
     uint32_t     swapchain_index = 0;
-    uint32_t     semaphore_index  = 0;
-    VkRenderPass render_pass      = nullptr;
+    uint32_t     semaphore_index = 0;
+    VkRenderPass render_pass     = nullptr;
 
     std::vector<VkImage>         swap_chain_images;
     std::vector<VkImageView>     swap_chain_image_views;

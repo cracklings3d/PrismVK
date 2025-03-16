@@ -20,4 +20,7 @@ namespace Prism::HAL::Vulkan
   {
     return static_cast<TEnumTo>(static_cast<uint32_t>(enum_value));
   }
+
+  template <typename T>
+  struct StructMemberTraits;
 } // namespace Prism::HAL::Vulkan

@@ -27,8 +27,10 @@ namespace Prism::HAL
 
   Vulkan::Window_Sdl2::Window_Sdl2(Extent2D extent) : _extent(extent)
   {
-    assert(SDL_WasInit(SDL_INIT_VIDEO) == SDL_TRUE);
-    assert(SDL_WasInit(SDL_INIT_EVENTS) == SDL_TRUE);
+    int initialized_SDL_modules = SDL_WasInit(0);
+
+    assert(initialized_SDL_modules & SDL_INIT_VIDEO);
+    assert(initialized_SDL_modules & SDL_INIT_EVENTS);
 
     _window = SDL_CreateWindow(
         "Vulkan Triangle", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, _extent.width, _extent.height,
@@ -97,7 +99,11 @@ namespace Prism::HAL
   {
     VkSurfaceKHR      surface;
     Vulkan::Instance *vulkan_instance = static_cast<Vulkan::Instance *>(instance);
-    assert(SDL_Vulkan_CreateSurface(_window, *vulkan_instance->get_vk_handle(), &surface) == SDL_TRUE);
-    return std::make_unique<Vulkan::Surface>(std::move(surface), vulkan_instance->get_vk_handle());
+    if (SDL_Vulkan_CreateSurface(_window, *vulkan_instance->get_vk_handle(), &surface) == SDL_TRUE) {
+      return std::make_unique<Vulkan::Surface>(std::move(surface), vulkan_instance->get_vk_handle());
+    }
+    char error[256];
+    SDL_GetErrorMsg(error, 256);
+    throw std::runtime_error(error);
   }
 } // namespace Prism::HAL

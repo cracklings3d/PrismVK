@@ -21,6 +21,7 @@
 #include "HAL/Vulkan/Shader.h"
 #include "HAL/Vulkan/Swapchain.h"
 #include "HAL/Vulkan/Sync.h"
+#include "Util/Util.h"
 
 namespace Prism::HAL::Vulkan
 {
@@ -141,11 +142,35 @@ namespace Prism::HAL::Vulkan
     return std::make_unique<Vulkan::Queue>(vk_queue);
   }
 
-  VkDeviceCreateInfo convert(const HAL::Device_create_info &device_create_info)
+  struct VkParamTag_DeviceCreateInfo_pQueueCreateInfos
+  {};
+
+  struct VkParamTag_DeviceQueueCreateInfo_pQueuePriorities
+  {};
+
+  template <>
+  struct StructMemberTraits<VkParamTag_DeviceCreateInfo_pQueueCreateInfos>
+  {
+    using StructType = VkDeviceCreateInfo;
+    using MemberType = VkDeviceQueueCreateInfo *;
+
+    static constexpr MemberType StructType::*member = VkDeviceCreateInfo::pQueueCreateInfos;
+  };
+
+  template <>
+  struct StructMemberTraits<VkParamTag_DeviceQueueCreateInfo_pQueuePriorities>
+  {
+    using StructType = VkDeviceQueueCreateInfo;
+    using MemberType = float *;
+
+    static constexpr MemberType StructType::*member = &VkDeviceQueueCreateInfo::pQueuePriorities;
+  };
+
+  VkScopedDeviceCreateInfo convert(const HAL::Device_create_info &device_create_info)
   {
     VkDeviceCreateInfo vk_device_create_info{};
 
-    std::vector<VkDeviceQueueCreateInfo> vk_queue_create_infos;
+    Util::Scoped_vector<VkDeviceQueueCreateInfo, std::vector<float>> vk_queue_create_infos;
 
     for (const auto &queue_create_info : device_create_info.queue_create_infos)
     {
@@ -158,99 +183,100 @@ namespace Prism::HAL::Vulkan
     vk_device_create_info.pQueueCreateInfos       = vk_queue_create_infos.data();
     vk_device_create_info.queueCreateInfoCount    = vk_queue_create_infos.size();
 
-    return vk_device_create_info;
-  }
+    return { vk_device_create_info, {vk_queue_create_infos}, device_create_info.required_extensions }
+  };
+}
 
-  VkDeviceQueueCreateInfo convert(const HAL::Device_queue_create_info &device_queue_create_info)
-  {
-    VkDeviceQueueCreateInfo vk_device_queue_create_info{};
+VkScopedDeviceQueueCreateInfo convert(const HAL::Device_queue_create_info &device_queue_create_info)
+{
+  VkDeviceQueueCreateInfo vk_device_queue_create_info{};
 
-    vk_device_queue_create_info.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    vk_device_queue_create_info.queueFamilyIndex = device_queue_create_info.queue_family_index;
-    vk_device_queue_create_info.queueCount       = device_queue_create_info.queue_priorities->size();
-    vk_device_queue_create_info.pQueuePriorities = device_queue_create_info.queue_priorities->data();
+  vk_device_queue_create_info.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+  vk_device_queue_create_info.queueFamilyIndex = device_queue_create_info.queue_family_index;
+  vk_device_queue_create_info.queueCount       = device_queue_create_info.queue_priorities.size();
+  vk_device_queue_create_info.pQueuePriorities = device_queue_create_info.queue_priorities.data();
 
-    return vk_device_queue_create_info;
-  }
+  return {._vk_struct = vk_device_queue_create_info, ._kept_alive = device_queue_create_info.queue_priorities};
+}
 
-  std::unique_ptr<HAL::Framebuffer> Device::create_framebuffer(const HAL::Framebuffer_create_info &create_info) const
-  {
-    VkFramebufferCreateInfo vk_create_info = convert(create_info);
-    VkFramebuffer           vk_framebuffer;
+std::unique_ptr<HAL::Framebuffer> Device::create_framebuffer(const HAL::Framebuffer_create_info &create_info) const
+{
+  VkFramebufferCreateInfo vk_create_info = convert(create_info);
+  VkFramebuffer           vk_framebuffer;
 
-    VkResult result = vkCreateFramebuffer(*_vk_handle, &vk_create_info, nullptr, &vk_framebuffer);
-    check_result(result, __func__);
+  VkResult result = vkCreateFramebuffer(*_vk_handle, &vk_create_info, nullptr, &vk_framebuffer);
+  check_result(result, __func__);
 
-    return std::make_unique<Vulkan::Framebuffer>(std::move(vk_framebuffer), _vk_handle.get());
-  }
+  return std::make_unique<Vulkan::Framebuffer>(std::move(vk_framebuffer), _vk_handle.get());
+}
 
-  std::unique_ptr<HAL::Buffer> Device::create_buffer(const HAL::Buffer_create_info &create_info) const
-  {
-    VkBufferCreateInfo vk_create_info = convert(create_info);
-    VkBuffer           vk_buffer;
+std::unique_ptr<HAL::Buffer> Device::create_buffer(const HAL::Buffer_create_info &create_info) const
+{
+  VkBufferCreateInfo vk_create_info = convert(create_info);
+  VkBuffer           vk_buffer;
 
-    VkResult result = vkCreateBuffer(*_vk_handle, &vk_create_info, nullptr, &vk_buffer);
-    check_result(result, __func__);
+  VkResult result = vkCreateBuffer(*_vk_handle, &vk_create_info, nullptr, &vk_buffer);
+  check_result(result, __func__);
 
-    VkMemoryRequirements mem_requirements;
-    vkGetBufferMemoryRequirements(*_vk_handle, vk_buffer, &mem_requirements);
+  VkMemoryRequirements mem_requirements;
+  vkGetBufferMemoryRequirements(*_vk_handle, vk_buffer, &mem_requirements);
 
-    VkMemoryAllocateInfo alloc_info{};
-    alloc_info.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    alloc_info.allocationSize  = mem_requirements.size;
-    alloc_info.memoryTypeIndex = find_memory_type(
-        mem_requirements.memoryTypeBits, convert_enum<VkMemoryPropertyFlags>(create_info.desired_memory_properties));
+  VkMemoryAllocateInfo alloc_info{};
+  alloc_info.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  alloc_info.allocationSize  = mem_requirements.size;
+  alloc_info.memoryTypeIndex = find_memory_type(
+      mem_requirements.memoryTypeBits, convert_enum<VkMemoryPropertyFlags>(create_info.desired_memory_properties));
 
-    VkDeviceMemory vk_memory;
-    result = vkAllocateMemory(*_vk_handle, &alloc_info, nullptr, &vk_memory);
-    check_result(result, __func__);
+  VkDeviceMemory vk_memory;
+  result = vkAllocateMemory(*_vk_handle, &alloc_info, nullptr, &vk_memory);
+  check_result(result, __func__);
 
-    vkBindBufferMemory(*_vk_handle, vk_buffer, vk_memory, 0);
+  vkBindBufferMemory(*_vk_handle, vk_buffer, vk_memory, 0);
 
-    return std::make_unique<Vulkan::Buffer>(std::move(vk_buffer), std::move(vk_memory), _vk_handle.get());
-  }
+  return std::make_unique<Vulkan::Buffer>(std::move(vk_buffer), std::move(vk_memory), _vk_handle.get());
+}
 
-  std::unique_ptr<HAL::Buffer_view> Device::create_buffer_view(const HAL::Buffer_view_create_info &create_info) const
-  {
-    VkBufferViewCreateInfo vk_create_info = convert(create_info);
-    VkBufferView           vk_buffer_view;
+std::unique_ptr<HAL::Buffer_view> Device::create_buffer_view(const HAL::Buffer_view_create_info &create_info) const
+{
+  VkBufferViewCreateInfo vk_create_info = convert(create_info);
+  VkBufferView           vk_buffer_view;
 
-    VkResult result = vkCreateBufferView(*_vk_handle, &vk_create_info, nullptr, &vk_buffer_view);
-    check_result(result, __func__);
+  VkResult result = vkCreateBufferView(*_vk_handle, &vk_create_info, nullptr, &vk_buffer_view);
+  check_result(result, __func__);
 
-    return std::make_unique<Vulkan::Buffer_view>(std::move(vk_buffer_view), _vk_handle.get());
-  }
+  return std::make_unique<Vulkan::Buffer_view>(std::move(vk_buffer_view), _vk_handle.get());
+}
 
-  std::unique_ptr<HAL::Command_pool> Device::create_command_pool(const HAL::Command_pool_create_info &create_info) const
-  {
-    VkCommandPoolCreateInfo vk_create_info = convert(create_info);
-    VkCommandPool           vk_command_pool;
+std::unique_ptr<HAL::Command_pool> Device::create_command_pool(const HAL::Command_pool_create_info &create_info) const
+{
+  VkCommandPoolCreateInfo vk_create_info = convert(create_info);
+  VkCommandPool           vk_command_pool;
 
-    VkResult result = vkCreateCommandPool(*_vk_handle, &vk_create_info, nullptr, &vk_command_pool);
-    check_result(result, __func__);
+  VkResult result = vkCreateCommandPool(*_vk_handle, &vk_create_info, nullptr, &vk_command_pool);
+  check_result(result, __func__);
 
-    return std::make_unique<Vulkan::Command_pool>(std::move(vk_command_pool), _vk_handle.get());
-  }
+  return std::make_unique<Vulkan::Command_pool>(std::move(vk_command_pool), _vk_handle.get());
+}
 
-  std::unique_ptr<HAL::Semaphore> Device::create_semaphore(const HAL::Semaphore_create_info &create_info) const
-  {
-    VkSemaphoreCreateInfo vk_create_info = convert(create_info);
-    VkSemaphore           vk_semaphore;
+std::unique_ptr<HAL::Semaphore> Device::create_semaphore(const HAL::Semaphore_create_info &create_info) const
+{
+  VkSemaphoreCreateInfo vk_create_info = convert(create_info);
+  VkSemaphore           vk_semaphore;
 
-    VkResult result = vkCreateSemaphore(*_vk_handle, &vk_create_info, nullptr, &vk_semaphore);
-    check_result(result, __func__);
+  VkResult result = vkCreateSemaphore(*_vk_handle, &vk_create_info, nullptr, &vk_semaphore);
+  check_result(result, __func__);
 
-    return std::make_unique<Vulkan::Semaphore>(std::move(vk_semaphore), _vk_handle.get());
-  }
+  return std::make_unique<Vulkan::Semaphore>(std::move(vk_semaphore), _vk_handle.get());
+}
 
-  std::unique_ptr<HAL::Fence> Device::create_fence(const HAL::Fence_create_info &create_info) const
-  {
-    VkFenceCreateInfo vk_create_info = convert(create_info);
-    VkFence           vk_fence;
+std::unique_ptr<HAL::Fence> Device::create_fence(const HAL::Fence_create_info &create_info) const
+{
+  VkFenceCreateInfo vk_create_info = convert(create_info);
+  VkFence           vk_fence;
 
-    VkResult result = vkCreateFence(*_vk_handle, &vk_create_info, nullptr, &vk_fence);
-    check_result(result, __func__);
+  VkResult result = vkCreateFence(*_vk_handle, &vk_create_info, nullptr, &vk_fence);
+  check_result(result, __func__);
 
-    return std::make_unique<Vulkan::Fence>(std::move(vk_fence), _vk_handle.get());
-  }
+  return std::make_unique<Vulkan::Fence>(std::move(vk_fence), _vk_handle.get());
+}
 } // namespace Prism::HAL::Vulkan

@@ -43,8 +43,8 @@ namespace Prism::HAL
    */
   struct Device_queue_create_info
   {
-    uint32_t                            queue_family_index;
-    std::shared_ptr<std::vector<float>> queue_priorities;
+    uint32_t           queue_family_index;
+    std::vector<float> queue_priorities;
   };
 
   /**
@@ -54,6 +54,17 @@ namespace Prism::HAL
   {
     std::vector<Device_queue_create_info> queue_create_infos;
     std::vector<const char *>             required_extensions;
+  };
+
+  // TODO: Implement a property scope guard for raw pointers in Device_create_info
+  struct Device_create_info_guard
+  {
+    Device_create_info_guard(Device_create_info &create_info) : _create_info(create_info) {}
+    ~Device_create_info_guard() { _create_info.queue_create_infos.clear(); }
+
+  private:
+    Device_create_info &_create_info;
+
   };
 
   class Device
@@ -85,13 +96,12 @@ namespace Prism::HAL
     virtual void wait_idle() const = 0;
 
     [[nodiscard]] virtual std::unique_ptr<Command_pool>
-    create_command_pool(const Command_pool_create_info& create_info) const = 0;
+    create_command_pool(const Command_pool_create_info &create_info) const = 0;
 
-    [[nodiscard]] virtual std::unique_ptr<Semaphore> 
-    create_semaphore(const Semaphore_create_info& create_info) const = 0;
-    
-    [[nodiscard]] virtual std::unique_ptr<Fence>
-    create_fence(const Fence_create_info& create_info) const = 0;
+    [[nodiscard]] virtual std::unique_ptr<Semaphore> create_semaphore(const Semaphore_create_info &create_info) const
+        = 0;
+
+    [[nodiscard]] virtual std::unique_ptr<Fence> create_fence(const Fence_create_info &create_info) const = 0;
   };
 
 } // namespace Prism::HAL

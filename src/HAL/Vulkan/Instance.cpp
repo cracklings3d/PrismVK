@@ -3,6 +3,8 @@
  * Created Feb 19 2025      *
  *****************************/
 
+#include <vulkan/vulkan.h>
+
 #include "HAL/Vulkan/Instance.h"
 
 #include "HAL/Vulkan/Error.h"
@@ -56,7 +58,7 @@ namespace Prism::HAL::Vulkan
     return physical_devices;
   }
 
-  VkInstanceCreateInfo convert(const HAL::Instance_create_info &instance_create_info)
+  std::pair<VkInstanceCreateInfo, VkApplicationInfo> convert(HAL::Instance_create_info &&instance_create_info)
   {
     VkApplicationInfo application_info{};
     application_info.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -64,20 +66,25 @@ namespace Prism::HAL::Vulkan
     application_info.applicationVersion = instance_create_info.application_version;
     application_info.pEngineName        = instance_create_info.engine_name.c_str();
     application_info.engineVersion      = instance_create_info.engine_version;
+    application_info.apiVersion         = VK_API_VERSION_1_4;
 
     VkInstanceCreateInfo vk_instance_create_info{};
-    vk_instance_create_info.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    vk_instance_create_info.pApplicationInfo        = &application_info;
-    vk_instance_create_info.enabledExtensionCount   = instance_create_info.required_extensions.size();
-    vk_instance_create_info.ppEnabledExtensionNames = instance_create_info.required_extensions.data();
-    return vk_instance_create_info;
+    vk_instance_create_info.sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    vk_instance_create_info.pApplicationInfo = &application_info;
+
+    return std::make_pair(std::move(vk_instance_create_info), std::move(application_info));
   }
 
-  std::unique_ptr<Instance> create_instance(const Instance_create_info &create_info)
+  std::unique_ptr<Instance> create_instance(Instance_create_info &&hal, std::vector<const char *> &&window_extensions)
   {
-    VkInstanceCreateInfo vk_instance_create_info = convert(create_info);
-    VkInstance           vk_instance;
-    VkResult             result = vkCreateInstance(&vk_instance_create_info, nullptr, &vk_instance);
+    auto [vk_create_info, vk_application_info] = convert(std::move(hal));
+    vk_create_info.pApplicationInfo            = &vk_application_info;
+
+    vk_create_info.enabledExtensionCount   = window_extensions.size();
+    vk_create_info.ppEnabledExtensionNames = window_extensions.data();
+
+    VkInstance vk_instance;
+    VkResult   result = vkCreateInstance(&vk_create_info, nullptr, &vk_instance);
     check_result(result, "Create_instance");
 
     return std::make_unique<Vulkan::Instance>(std::move(vk_instance));
